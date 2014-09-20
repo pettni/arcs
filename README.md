@@ -1,6 +1,6 @@
 # ABSTR-REFINEMENT
 
-Toolbox in development for incremental synthesis of correct-by-construction switching protocol. 
+Toolbox in development for incremental synthesis of correct-by-construction switching protocols. 
 
 ## Functionality
 
