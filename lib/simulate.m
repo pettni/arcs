@@ -4,7 +4,11 @@ function simulate(part, winning, cinv, K, act_set)
 	numsim = 50;
 	maxdisctrans = 500;
 	dt = 0.001;
-	winningnotcinv = setdiff(winning, cinv);
+	if length(winning) > length(cinv)
+		winningnotcinv = setdiff(winning, cinv);
+	else
+		winningnotcinv = winning;
+	end
 
 	clf;
 	hold on
