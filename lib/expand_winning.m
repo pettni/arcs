@@ -15,7 +15,12 @@ function [win1 K1 win1brd] = expand_winning(win0, K0, trans_set, unsafe, calG)
 			for q = intersect(S2, G)	
 				S4 = [q];
 				for i=1:length(G) % compute stuff reachable from q, except win0
-					S4 = setdiff(union(S4, post(S4, trans_set, a)), win0);
+					S4n = setdiff(union(S4, post(S4, trans_set, a)), win0);
+                    if length(S4n)==length(S4)
+                        break;
+                    else
+                        S4 = S4n;
+                    end
 				end
 				if isempty(setdiff(S4, union(G, S1)))
 					% no states except those in S1 are reachable -> Win!
