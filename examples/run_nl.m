@@ -119,7 +119,7 @@ for iter = 1:maxiter
     part.split_cell(chInd);
 
     % update transitions locally around chInd
-    [trans, trans_out] = update_transitions(act_set, part, chInd, trans, trans_out);
+    [trans, trans_out] = update_transitionsNL(act_set, part, chInd, trans, trans_out);
 
     %update calG locally around chInd
     calG = update_progress_group(calG, part, chInd);

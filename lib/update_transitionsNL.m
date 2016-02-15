@@ -1,4 +1,4 @@
-function [trans, trans_out] = update_transitions(fx, part, chInd, oldtrans, oldtrans_out)
+function [trans, trans_out] = update_transitionsNL(fx, part, chInd, oldtrans, oldtrans_out, vars)
 	% Return new transition matrices
 	% Assumes a new state has been added by splitting a state
 	% The new positions are at chInd and at the end of the part vector
@@ -8,7 +8,7 @@ function [trans, trans_out] = update_transitions(fx, part, chInd, oldtrans, oldt
 		trans_out = zeros(length(part),1,length(fx));
 		for i=1:length(fx);
 			[trans(:,:,i) trans_out(:,:,i)] = ...
-					update_transitions(fx{i}, part, chInd, oldtrans(:,:,i), oldtrans_out(:,:,i));
+					update_transitionsNL(fx{i}, part, chInd, oldtrans(:,:,i), oldtrans_out(:,:,i), vars);
 		end
 		return;
 	end
@@ -29,29 +29,29 @@ function [trans, trans_out] = update_transitions(fx, part, chInd, oldtrans, oldt
 
 	% Adjacencies of first cell
 	for adj=adj1
-		if isTransLin(part(chInd), part(adj), fx)
+		if isTransNLin(part(chInd), part(adj), fx, vars)
 			trans(chInd, adj) = 1;
 		end
-		if isTransLin(part(adj), part(chInd), fx)
+		if isTransNLin(part(adj), part(chInd), fx, vars)
 			trans(adj, chInd) = 1;
 		end
 	end
 
 	% Adjacencies of second cell
 	for adj=adj2
-		if isTransNLin(part(N), part(adj), fx)
+		if isTransNLin(part(N), part(adj), fx, vars)
 			trans(N, adj) = 1;
 		end
-		if isTransLin(part(adj), part(N), fx)
+		if isTransNLin(part(adj), part(N), fx, vars)
 			trans(adj, N) = 1;
 		end
-	end
-
+    end
+    deg = 4;
 	% Transient - if previous was transient, so are these, so only need to 
 	% check non-transient case
 	if oldtrans(chInd, chInd)
-		trans(chInd, chInd) = not(isTransientNLin(part(chInd),fx));
-		trans(N, N) = not(isTransientNLin(part(N),fx));
+		trans(chInd, chInd) = not(isTransientNLin(part(chInd),fx, vars, deg));
+		trans(N, N) = not(isTransientNLin(part(N),fx, vars, deg));
 	end
 
 	% Transitions to outside
