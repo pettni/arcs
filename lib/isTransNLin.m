@@ -38,7 +38,8 @@ function result = isTransNLin(rec1, rec2, vField, vars)
     for i=1:length(vars)
         F = [F; irec.xmin(i)<=vars(i)<=irec.xmax(i)];
     end
-    solvemoment(F,poly);
+    options = sdpsettings('verbose',0);
+    solvemoment(F,poly,options);
     if value(poly)>0
         result = false;  % there is no flow
     end

@@ -23,8 +23,9 @@ show_plot = 0;
 % Compute transitions
 [trans, trans_out] = compute_transitions_nl(act_set, part, vars);
 
+deg = 4;
 % Compute progress group
-calG = compute_progress_group(act_set, part);
+calG = compute_progress_group_nl(act_set, part, deg);
 
 for iter = 1:maxiter
     iter
