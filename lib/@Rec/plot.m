@@ -49,7 +49,7 @@ function handle = plot(rec, color, alpha, multiple)
 	end	
 
 	if len(rec) == 0
-		print('Tried to plot nonexistent cell')
+		disp('Warning: tried to plot nonexistent cell')
 		% do nothing
 		return;
 	end
