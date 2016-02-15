@@ -48,6 +48,12 @@ function handle = plot(rec, color, alpha, multiple)
 		return;
 	end	
 
+	if len(rec) == 0
+		print('Tried to plot nonexistent cell')
+		% do nothing
+		return;
+	end
+
 	if rec.dim>3
 		error('Cant plot in dimension larger than 3')
 	end
