@@ -56,10 +56,10 @@ function [trans, trans_out] = update_transitionsNL(fx, part, chInd, oldtrans, ol
 
 	% Transitions to outside
 	if oldtrans_out(chInd)
-		if isTransOutNLin(part(chInd), part.domain, fx)
+		if isTransOutNLin(part(chInd), part.domain, fx, vars)
             trans_out(chInd) = 1;
         end
-        if isTransOutNLin(part(N), part.domain, fx)
+        if isTransOutNLin(part(N), part.domain, fx, vars)
             trans_out(N) = 1;
         end
 	end
