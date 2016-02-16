@@ -39,11 +39,11 @@ for i =1:length(vars)
     F = [F; sos(sm1);sos(sm2)];
 end
 
-options = sdpsettings('verbose',0);
+global ops;
 
 F = [sos(sos_mult'*polys - jacobian(Bx,vars)*vField - epsilon);F];
 
-diagnostics = solvesos(F, [], options, [coefs;msos_coefs]);
+diagnostics = solvesos(F, [], ops, [coefs;msos_coefs]);
 if diagnostics.problem ~= 0 %0 feas, 1 infeas, other something else
     result = 0;
 else
