@@ -39,8 +39,8 @@ function result = isTransNLin(rec1, rec2, vField, vars)
         F = [F; irec.xmin(i)<=vars(i)<=irec.xmax(i)];
     end
     global ops;
-    solvemoment(F,poly,ops);
-    if value(poly)>0
+    diagnosis = solvemoment(F,poly,ops,4);
+    if diagnosis.problem==0 & value(poly)>0
         result = false;  % there is no flow
     end
 end
