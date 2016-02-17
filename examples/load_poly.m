@@ -1,5 +1,5 @@
 domain = Rec([-2 -1.5; 2 3]);
-goal_set = Rec([-1 1.5; -.5 2], 1);
+goal_set = Rec([-1 1.5; -.5 1.9], 1);
 unsafe_set = Rec([-2 -1.5; -.5 -1], 2);
 
 sdpvar x1 x2
@@ -19,8 +19,8 @@ fx3 = [-x2-0.5*x1^3-1.5*x1+2;...
 fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
     -10+x1];
 
-%act_set={{fx1},{fx2},{fx3},{fx4}};
-act_set={{fx1},{fx2},{fx3}};
+act_set={{fx1},{fx2},{fx3},{fx4}};
+%act_set={{fx1},{fx2},{fx3}};
 
 % Build initial partition
 part = Partition(domain);

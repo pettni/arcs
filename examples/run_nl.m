@@ -18,7 +18,7 @@ tic
 load_poly;
 % load_poly_lin_test;
 
-maxiter = 500;
+maxiter = 20;
 show_plot = 0;
 
 % Compute transitions
@@ -27,8 +27,8 @@ show_plot = 0;
 deg = 4;
 % Compute progress group
 calG = compute_progress_group_nl(act_set, part, vars, deg);
-
-for iter = 1:maxiter
+%%
+for iter = 41:44%maxiter
     iter
     N_state = length(part);
     N_act = length(act_set);
@@ -113,7 +113,7 @@ for iter = 1:maxiter
         unsafe = union(unsafe_1, pre_forall_forall(unsafe_1, trans_set));
     end
     part.add_aps(setdiff(unsafe, N_state+1), 2);
-
+for subst = 1:10
     %split largest cell in in split_list
     [~, maxvolind] = max(volume(part(split_list)));
     chInd = split_list(maxvolind);
@@ -124,7 +124,7 @@ for iter = 1:maxiter
 
     %update calG locally around chInd
     calG = update_progress_group(calG, part, chInd);
-
+end
     % plot new partition
     if show_plot
         plot(part)
