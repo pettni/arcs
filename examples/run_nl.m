@@ -16,8 +16,9 @@ tic
 % load_linear_codim_one 
 % load_radiant;
 load_poly;
+% load_poly_lin_test;
 
-maxiter = 10;
+maxiter = 500;
 show_plot = 0;
 
 % Compute transitions
