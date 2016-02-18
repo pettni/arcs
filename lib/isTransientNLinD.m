@@ -51,7 +51,10 @@ global ops;
 F = [sos(sos_mult'*polys - jacobian(Bx,varsx)*vField - epsilon);F];
 
 diagnostics = solvesos(F, [], ops, [coefs;msos_coefs]);
-if diagnostics.problem ~= 0 %0 feas, 1 infeas, other something else
+%diagnostics.problem
+
+% unbounded objective means infeasible, 2 means infeasible
+if diagnostics.problem ~= 0 & diagnostics.problem ~= 4  %0 feas, 1 infeas, other something else
     result = 0;
 else
     result = 1;

@@ -18,7 +18,7 @@ tic
 load_poly_disturbance;
 % load_poly_lin_test;
 
-maxiter = 30;
+maxiter = 80;
 show_plot = 0;
 
 % Compute transitions
@@ -26,7 +26,8 @@ show_plot = 0;
 
 deg = 4;
 % Compute progress group
-calG = compute_progress_group_nld(act_set, part, vars, deg, dBound);
+%calG = compute_progress_group_nld(act_set, part, vars, 6, dBound);
+calG = {{},{},{},{}};
 %%
 for iter = 1:maxiter
     iter

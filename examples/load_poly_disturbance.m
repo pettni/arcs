@@ -1,5 +1,5 @@
 domain = Rec([-2 -1.5; 2 3]);
-goal_set = Rec([-1 0; -0.2 0.8], 1);
+goal_set = Rec([-1 0.5; -0.2 1.8], 1);
 unsafe_set = Rec([-2 -1.5; -.5 -1], 2);
 
 sdpvar x1 x2 d1
