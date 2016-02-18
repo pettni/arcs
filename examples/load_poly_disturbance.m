@@ -1,0 +1,31 @@
+domain = Rec([-2 -1.5; 2 3]);
+goal_set = Rec([-1 0; -0.2 0.8], 1);
+unsafe_set = Rec([-2 -1.5; -.5 -1], 2);
+
+sdpvar x1 x2 d1
+
+vars = [x1; x2; d1];
+
+%Moore Greitzer
+fx1 = [-x2-0.5*x1^3-1.5*x1;...
+    -x2^2+2+x1+d1];
+
+fx2 = [-x2-0.5*x1^3-1.5*x1;...
+    -x2+x1+d1];
+
+fx3 = [-x2-0.5*x1^3-1.5*x1+2;...
+    10+x1+d1];
+
+fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
+    -10+x1+d1];
+
+act_set={{fx1},{fx2},{fx3},{fx4}};
+%act_set={{fx1},{fx2},{fx3}};
+
+dBound = 0.005;
+
+% Build initial partition
+part = Partition(domain);
+part.add_area(goal_set);
+part.add_area(unsafe_set)
+part.check();   % sanity check
