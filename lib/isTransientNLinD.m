@@ -27,8 +27,8 @@ for i =1:length(varsx)
     %mid = (rec1.xmax(i)+rec1.xmin(i))/2;
     polys = [polys; rec1.xmin(i)-varsx(i)]; %<=0;
     polys = [polys; varsx(i)-rec1.xmax(i)];
-    [sm1 sc1] = polynomial(varsx,deg-1,0);
-    [sm2 sc2] = polynomial(varsx,deg-1,0);
+    [sm1 sc1] = polynomial(vars,deg-1,0);
+    [sm2 sc2] = polynomial(vars,deg-1,0);
     %sdisplay(sm)
     sos_mult = [sos_mult;sm1;sm2];
     msos_coefs = [msos_coefs; sc1;sc2;];
@@ -38,8 +38,8 @@ end
 for i =1:length(varsd)
     polys = [polys; -dbound-varsd(i)]; %<=0;
     polys = [polys; varsx(i)-dbound];
-    [sm1 sc1] = polynomial(varsd,deg-1,0);
-    [sm2 sc2] = polynomial(varsd,deg-1,0);
+    [sm1 sc1] = polynomial(vars,deg-1,0);
+    [sm2 sc2] = polynomial(vars,deg-1,0);
     %sdisplay(sm)
     sos_mult = [sos_mult;sm1;sm2];
     msos_coefs = [msos_coefs; sc1;sc2;];

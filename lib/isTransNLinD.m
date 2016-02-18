@@ -7,7 +7,6 @@ function result = isTransNLinD(rec1, rec2, vField, vars, dBound)
 % find a certificate that guarantees the non-existence.
 
     irec = intersect(rec1,rec2);
-    vField = vField{1};
     
     vField = vField{1};
     dim = size(vField,1);
@@ -49,7 +48,7 @@ function result = isTransNLinD(rec1, rec2, vField, vars, dBound)
         F = [F; -dBound<=varsd(i)<=dBound];
     end
     global ops;
-    diagnosis = solvemoment(F,poly,ops);
+    diagnosis = solvemoment(F,poly,ops, 4);
     if (diagnosis.problem==0 || diagnosis.problem==4) & value(poly)>0
         result = false;  % there is no flow
     end
