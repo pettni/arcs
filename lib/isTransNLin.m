@@ -40,7 +40,7 @@ function result = isTransNLin(rec1, rec2, vField, vars)
     end
     global ops;
     diagnosis = solvemoment(F,poly,ops,4);
-    if diagnosis.problem==0 & value(poly)>0
+    if (diagnosis.problem==0 || diagnosis.problem==4) & value(poly)>0
         result = false;  % there is no flow
     end
 end
