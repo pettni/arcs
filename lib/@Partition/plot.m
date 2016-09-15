@@ -10,7 +10,9 @@ function plot(part, alpha, text)
 	end
 	hh = ishold; if (~hh) clf; end
 	hold on;
-	plot(part.cell_list(part.get_cells_with_ap([])), -1, alpha, 1);
+    if ~isempty(part.get_cells_with_ap([]))
+        plot(part.cell_list(part.get_cells_with_ap([])), -1, alpha, 1);
+    end
 	aps = part.get_all_aps;
 	colors = winter(length(aps));
 	h_list = [];
