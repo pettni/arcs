@@ -11,6 +11,7 @@ Toolbox in development for incremental synthesis of correct-by-construction swit
 ## Authors
 
 Petter Nilsson, University of Michigan, pettni@umich.edu
+Necmiye Ozay, University of Michigan
 
 ## References
 
