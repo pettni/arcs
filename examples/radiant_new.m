@@ -8,7 +8,8 @@ domain = Rec([20 28; 20 28; 20 28]);
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
 % unsafe_set = Rec([27.7 28; 27 28; 27.2 28], {'UNSAFE'});
 
-maxiter = 210;  % enough for small SET
+maxiter = 100;
+split_goal = true;   % to avoid zeno
 
 load('radiant_data/a1.mat')
 load('radiant_data/a2.mat')
@@ -33,7 +34,7 @@ part.add_area(goal_set);
 % part.add_area(unsafe_set)
 
 % Split goal set to reduce Zeno
-if false
+if split_goal
 	for i=1:128
 		goal = part.get_cells_with_ap('SET');
 		[~, C_index] = max(volume(part(goal)));

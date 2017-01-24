@@ -77,4 +77,4 @@ end
 
 disp(['all inside: ', num2str(all_in)])
 
-% save('output/data_radiant.mat', 'part', 'ts', 'Win', 'xvec_list', 'avec_list', 'goal_set', 'dt')
+save('radiant_data/radiant_sol.mat', 'part', 'ts', 'Win', 'xvec_list', 'avec_list', 'goal_set', 'dt')

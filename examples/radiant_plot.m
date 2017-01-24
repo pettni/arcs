@@ -1,4 +1,4 @@
-% clear; load('output/data_radiant.mat')
+clear; load('radiant_data/radiant_sol.mat')
 
 figure(1)
 clf; hold on
@@ -57,8 +57,8 @@ matlab2tikz('output/radiant_3d.tex','interpretTickLabelsAsTex',true, ...
 		     'width','\figurewidth', 'height', '\figureheight', ...
 		     'parseStrings',false, 'showInfo', false)
 
-xvec = xvec_list{1};
-avec = avec_list{1};
+xvec = xvec_list{2};
+avec = avec_list{2};
 
 figure(2)
 clf; hold on
