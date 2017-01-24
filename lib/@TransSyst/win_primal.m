@@ -3,12 +3,15 @@ function [V, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
     %  []A && <>[]B &&_i []<>C_i
     % under (quant1, forall)-controllability
     % with the initial condition V ("warm start")
+    %
+    % Returns a sorted set
     
     if nargin<6
         V = uint32([]);
     end
 
     V = uint32(V);
+    A = sort(A);
 
     ts.create_fast();
 
@@ -21,14 +24,25 @@ function [V, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
             Z = union(Z, ...
                       ts.pginv(ts.pg_U{i}, ts.pg_G{i}, V, A, quant1));
         end
-        [Vt, Kt] = ts.win_intermediate(A, B, Z, C_list, quant1);
+
+        if nargout > 2
+            [Vt, Kt] = ts.win_intermediate(A, B, Z, C_list, quant1);
+        else
+            Vt = ts.win_intermediate(A, B, Z, C_list, quant1);
+        end
+
 
         if length(Vt) == length(V)
             break
         end
 
-        Vlist{end+1} = Vt;
-        Klist{end+1} = Kt;
+        if nargout > 1
+            Vlist{end+1} = Vt;
+        end
+
+        if nargout > 2
+            Klist{end+1} = Kt;
+        end
 
         V = Vt;
     end

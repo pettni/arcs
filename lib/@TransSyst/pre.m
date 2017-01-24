@@ -1,49 +1,61 @@
 function [ret, K] = pre(ts, X, U, quant1, quant2)
     % Compute pre(X) under (quant1, quant2)-controllability
-    % and action set U
-    K = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
+    % and action set U. 
+    %
+    % Note: X must be sorted!
+    % Returns a sorted set
 
-    pre_all = uint32([]);
+    if nargout > 1
+        K = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
+    end
 
+    log_idx = false(1, ts.n_s);
     if ts.fast_enabled
         for i=1:length(X)
-            pre_all = [pre_all ts.fast_pre(X(i))];
+            for j = ts.fast_pre_all{X(i)}
+                log_idx(j) = 1;
+            end
         end
     else
         for i=1:ts.num_trans()
             if ismember(ts.state2(i), X) && ismember(ts.action(i), U)
-                pre_all(end+1) = ts.state1(i);
+                log_idx(ts.state1(i)) = 1;
             end
         end
     end
-    pre_all = unique(pre_all); 
-
-    ret = uint32([]);
-    for i = 1:length(pre_all)
-        q = pre_all(i);     % candidate state
+    
+    for q = 1:ts.n_s
+        if ~log_idx(q)
+            continue
+        end
         act_list = zeros(1, ts.n_a);   % outcome per action 
         for a = 1:ts.n_a
-            aPost = ts.post(q, a);
-            if strcmp(quant2, 'exists')
-                act_list(a) = any(ismember(aPost, X));
+            if ts.fast_enabled
+                aPost = ts.fast_post{(a-1) * ts.n_s + q};
             else
-                act_list(a) = all(ismember(aPost, X)) && length(aPost) > 0;
+                aPost = ts.post(q, a);
+            end
+            if strcmp(quant2, 'exists')
+                act_list(a) = any(builtin('_ismemberhelper',aPost, X));
+            else
+                act_list(a) = all(builtin('_ismemberhelper',aPost, X)) && ~isempty(aPost);
             end
         end
         if strcmp(quant1, 'exists')
-            if any(act_list)
-                ret(end+1) = q;
+            if ~any(act_list)
+                log_idx(q) = 0;
+            elseif nargout > 1
                 K(q) = find(act_list); 
             end
         else
-            if all(act_list)
-                ret(end+1) = q;
+            if ~all(act_list)
+                log_idx(q) = 0;
+            elseif nargout > 1
                 K(q) = 1:ts.n_a;
             end
         end
     end
 
-    if ts.b_debug
-        assert(all(ismember(ret, cell2mat(K.keys))))
-    end
+    ret = zeros(1, sum(log_idx), 'uint32');
+    ret(:) = find(log_idx);
 end

@@ -7,12 +7,18 @@ dt = 1;             % seconds
 xvec_list = {};
 avec_list = {};
 
-start_set = setdiff(Win, B);
+% Assume winning set is a square
+win_min = [Inf Inf Inf];
+win_max = [-Inf -Inf -Inf];
+for rec = part(Win)
+    win_max = max(win_max, rec.xmax);
+    win_min = min(win_min, rec.xmin);
+end
+
+randseed(1);
 
 for sim = 1:numsim
-    rec0 = part(start_set(randi(length(start_set))));
-
-    x = rec0.getMidpoint()';
+    x = win_min' + rand(3,1) .* (win_max' - win_min');
     s = part.find_cell(x);
     t = 0;
 
@@ -39,9 +45,10 @@ for sim = 1:numsim
                 k_counter = max(k_counter-1, 1);
             end
 
+            % Lazy strategy
             acts = Klist{k_counter}{1}(s);
             if ~ismember(act, acts)
-                act = acts(1);
+                act = acts(randi(length(acts)));
             end
         end
 
@@ -69,3 +76,5 @@ for i=1:numsim
 end
 
 disp(['all inside: ', num2str(all_in)])
+
+% save('output/data_radiant.mat', 'part', 'ts', 'Win', 'xvec_list', 'avec_list', 'goal_set', 'dt')

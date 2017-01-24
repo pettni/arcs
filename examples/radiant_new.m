@@ -5,10 +5,10 @@ ops = sdpsettings('solver','sedumi','cachesolvers',1,'verbose',0);
 tic
 
 domain = Rec([20 28; 20 28; 20 28]);
-goal_set = Rec([21 27; 22 24; 22 24], {'SET'});
-unsafe_set = Rec([27.7 28; 27 28; 27.2 28], {'UNSAFE'});
+goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
+% unsafe_set = Rec([27.7 28; 27 28; 27.2 28], {'UNSAFE'});
 
-maxiter = 160;
+maxiter = 210;  % enough for small SET
 
 load('radiant_data/a1.mat')
 load('radiant_data/a2.mat')
@@ -25,15 +25,27 @@ fx2.A = a2;
 fx2.K = b2;
 act_set={fx1,fx2};
 
+tic
+
 % Build initial partition
 part = Partition(domain);
 part.add_area(goal_set);
-part.add_area(unsafe_set)
+% part.add_area(unsafe_set)
+
+% Split goal set to reduce Zeno
+if false
+	for i=1:128
+		goal = part.get_cells_with_ap('SET');
+		[~, C_index] = max(volume(part(goal)));
+		split_index = goal(C_index);
+		part.split_cell(split_index);
+	end
+end
+
 part.check();   % sanity check
 
-N = length(part);
-
 % Build transition system
+N = length(part);
 ts = TransSyst(N+1, 2);  % state N+1 is outside, required for AFTS to be welldef
 
 % Add transitions
@@ -77,12 +89,9 @@ for act_ind = 1:2
     end
 end
 
-
 %%%%%%%%%%%%%
 % SYNTHESIS %
 %%%%%%%%%%%%%
-
-tic
 
 Win = [];
 V1 = [];
@@ -95,18 +104,19 @@ while true
 		vol = sum(volume(part(Win)))/volume(domain);
 	end
 	
-	disp(['iteration ', num2str(iter), ', winning set volume ', num2str(vol)])
+	time = toc;
+	disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(N), ', winning set volume ', num2str(vol)])
 
 	N = length(part);
 
 	% Want [] A && <>[] B
 	A = 1:N;
-	A = setdiff(1:N, part.get_cells_with_ap({'UNSAFE'}));
+	% A = setdiff(1:N, part.get_cells_with_ap({'UNSAFE'}));
 	B = part.get_cells_with_ap({'SET'});
 	C_list = {1:N};
 
 	% Winning set
-	[Win, Vlist_t, ~] = ts.win_primal(A, B, C_list, 'exists', Win);
+	[Win, Vlist_t] = ts.win_primal(A, B, C_list, 'exists', Win);
 	
 	if length(Vlist_t) > 0
 		V1 = Vlist_t{1};
@@ -155,7 +165,7 @@ while true
 	iter = iter + 1;
 end
 
-% Get clean control strategy
+% Get control strategy
 [~, Vlist, Klist] = ts.win_primal(A, B, C_list, 'exists');
 
 toc

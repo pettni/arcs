@@ -83,7 +83,7 @@ function test_primal1(testCase)
 	s.add_transition(5, 6, 2)
 
     % Test []{1 2 3 4 5} and []<>s2 and []<>s1
-    safe = [1 2 3 4 5];
+    safe = [1 2 4 3 5];
     C1 = [3];
     C2 = [2];
     verifyEqual(testCase, ...

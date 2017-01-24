@@ -14,8 +14,8 @@ classdef TransSyst<handle
 		pg_G = {};
 
 		% Fastaccess_first
-		fast_post = containers.Map();
-		fast_pre = containers.Map();
+		fast_post = {};
+		fast_pre_all = {};
 		fast_enabled = false;
 
         % Debugging flag
@@ -38,19 +38,15 @@ classdef TransSyst<handle
             if ts.fast_enabled
                 return
             end
-			ts.fast_post = containers.Map(num2cell(1:ts.n_s * ts.n_a), ...
-											cell(1, ts.n_s * ts.n_a));
-			ts.fast_pre = containers.Map(num2cell(1:ts.n_s), ...
-											cell(1, ts.n_s));
+			ts.fast_post = cell(1, ts.n_s * ts.n_a);
+			ts.fast_pre_all = cell(1, ts.n_s);
 
 			for i=1:ts.num_trans()
 				s1 = ts.state1(i);
 				s2 = ts.state2(i);
 				a = ts.action(i);
-  				ts.fast_post((a-1)*ts.n_s + s1) = ...
-   					[ts.fast_post((a-1)*ts.n_s + s1) s2];
-
-   				ts.fast_pre(s2) = [ts.fast_pre(s2) s1];
+  				ts.fast_post{(a-1)*ts.n_s + s1}(end+1) = s2;
+   				ts.fast_pre_all{s2}(end+1) = s1;
 			end
 
 			ts.fast_enabled = true;
