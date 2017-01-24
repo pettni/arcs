@@ -1,6 +1,6 @@
 % simulate radiant example using Euler forward
 
-numsim = 20;
+numsim = 50;
 maxT = 1.5 * 3600;  % seconds
 dt = 1;             % seconds
 
@@ -45,6 +45,10 @@ for sim = 1:numsim
             end
         end
 
+        % Sanity checks
+        assert(isInside(part(s), x))
+        assert(ismember(s, Vlist{k_counter}))
+
         x = x + (act_set{act}.A * x + act_set{act}.K) * dt;
         t = t + dt;
         xvec(:, end+1) = x;
@@ -59,6 +63,7 @@ end
 all_in=1;
 for i=1:numsim
     if ~isInside(goal_set, xvec_list{i}(:, end))
+        disp(['number ', num2str(i), ' outside'])
         all_in = 0
     end
 end

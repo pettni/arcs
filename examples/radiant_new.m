@@ -5,10 +5,10 @@ ops = sdpsettings('solver','sedumi','cachesolvers',1,'verbose',0);
 tic
 
 domain = Rec([20 28; 20 28; 20 28]);
-goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
+goal_set = Rec([21 27; 22 24; 22 24], {'SET'});
 unsafe_set = Rec([27.7 28; 27 28; 27.2 28], {'UNSAFE'});
 
-maxiter = 100;
+maxiter = 160;
 
 load('radiant_data/a1.mat')
 load('radiant_data/a2.mat')
@@ -155,7 +155,7 @@ while true
 	iter = iter + 1;
 end
 
-% Get clean control strat
-[Vlist, Klist] = ts.win_primal(A, B, C_list, 'exists');
+% Get clean control strategy
+[~, Vlist, Klist] = ts.win_primal(A, B, C_list, 'exists');
 
 toc
