@@ -5,7 +5,7 @@ ops = sdpsettings('solver','sedumi','cachesolvers',1,'verbose',0);
 tic
 
 domain = Rec([20 28; 20 28; 20 28]);
-goal_set = Rec([21, 27; 22 25; 22 25], 1);
+goal_set = Rec([21 27; 22 25; 22 25], 1);
 % unsafe_set = Rec([27.7 28; 27 28; 27.2 28], 2);
 
 load('radiant_data/a1.mat')
@@ -80,15 +80,16 @@ end
 % SYNTHESIS %
 %%%%%%%%%%%%%
 
-Vinf = [];
-maxiter = 140
-iter = 0
+Win = [];
+V1 = [];
+maxiter = 100;
+iter = 0;
 while true 	
 
-	if isempty(Vinf)
+	if isempty(Win)
 		vol = 0;
 	else
-		vol = sum(volume(part(Vinf)))/volume(domain);
+		vol = sum(volume(part(Win)))/volume(domain);
 	end
 	
 	disp(['iteration ', num2str(iter), ', winning set volume ', num2str(vol)])
@@ -105,10 +106,15 @@ while true
 	ts.create_fast();
 
 	% Winning set
-	[Vinf, V1] = ts.win_primal(A, B, C_list, 'exists', Vinf);
+	[Vlist_t, ~] = ts.win_primal(A, B, C_list, 'exists', Win);
+	
+	if length(Vlist_t) > 0
+		Win = Vlist_t{end};
+		V1 = Vlist_t{1};
+	end
 
 	% Candidate set
-	C = union(setdiff(ts.pre(Vinf, 1:2, 'exists', 'exists'), Vinf), ...
+	C = union(setdiff(ts.pre(Win, 1:2, 'exists', 'exists'), Win), ...
 	          setdiff(B, V1));
 	if isempty(C) || iter == maxiter
 		break
@@ -149,3 +155,6 @@ while true
 
 	iter = iter + 1;
 end
+
+% Get clean control strat
+[Vlist, Klist] = ts.win_primal(A, B, C_list, 'exists');

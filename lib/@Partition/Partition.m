@@ -54,6 +54,17 @@ classdef Partition<handle
 			part.cell_list = [mldivide(part.cell_list, area) area];
 		end
 
+		function ret = find_cell(part, point)
+			% find cell that contains given point
+			ret = -1;
+			for i=1:length(part.cell_list)
+				if isInside(part.cell_list(i), point)
+					ret = i;
+					return
+				end
+			end
+		end
+
 		function compute_adjacency(part)
 			% Generate and store adjacency matrix
 		    N = length(part.cell_list);
