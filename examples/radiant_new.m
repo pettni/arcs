@@ -1,0 +1,151 @@
+clear all;
+addpath('../lib')
+global ops
+ops = sdpsettings('solver','sedumi','cachesolvers',1,'verbose',0);
+tic
+
+domain = Rec([20 28; 20 28; 20 28]);
+goal_set = Rec([21, 27; 22 25; 22 25], 1);
+% unsafe_set = Rec([27.7 28; 27 28; 27.2 28], 2);
+
+load('radiant_data/a1.mat')
+load('radiant_data/a2.mat')
+load('radiant_data/b1.mat')
+load('radiant_data/b2.mat')
+
+b1(3) = b1(3)/10; 
+b2(3) = b2(3)/10;
+
+fx1.A = a1;
+fx1.K = b1;
+
+fx2.A = a2;
+fx2.K = b2;
+act_set={fx1,fx2};
+
+% Build initial partition
+part = Partition(domain);
+part.add_area(goal_set);
+% part.add_area(unsafe_set)
+part.check();   % sanity check
+
+N = length(part);
+
+% Build transition system
+ts = TransSyst(N+1, 2);  % state N+1 is outside, required for AFTS to be welldef
+
+% Add transitions
+for act = 1:2
+	for i=1:N
+		% Neighbor transitions
+	    [adj, ~] = part.get_neighbors(i);
+	    for j=adj
+	        if isTransLin(part(i), part(j), act_set{act})
+	            ts.add_transition(i, j, act);
+	        end
+	    end
+
+	    % Out-of-domain
+	    if isTransOutLin(part(i), part.domain, act_set{act})
+	        ts.add_transition(i, N+1, act);
+	    end
+
+	    % Self transitions
+	    if ~isTransientLin(part(i),act_set{act})
+	    	ts.add_transition(i, i, act);
+	    end
+	end
+end
+
+% Add progress groups
+calG = cell(1,length(act_set));
+for act_ind = 1:2
+    calG{act_ind} = {};
+
+    % Whole domain progress groups
+    if isTransientLin(part.domain,act_set{act_ind})
+    	ts.add_progress_group([act_ind], 1:N)
+    else
+    	% Individual state progress group
+        for st_ind = 1:N
+            if isTransientLin(part(st_ind), act_set{act_ind})
+            	ts.add_progress_group([act_ind], [st_ind])
+            end
+        end
+    end
+end
+
+
+%%%%%%%%%%%%%
+% SYNTHESIS %
+%%%%%%%%%%%%%
+
+Vinf = [];
+maxiter = 140
+iter = 0
+while true 	
+
+	if isempty(Vinf)
+		vol = 0;
+	else
+		vol = sum(volume(part(Vinf)))/volume(domain);
+	end
+	
+	disp(['iteration ', num2str(iter), ', winning set volume ', num2str(vol)])
+
+	N = length(part);
+
+	% Want [] A && <>[] B
+	A = 1:N;
+	% A = setdiff(1:N, part.get_cells_with_ap(2));
+	B = part.get_cells_with_ap(1);
+	C_list = {1:N};
+
+	% Create fast-access matrices
+	ts.create_fast();
+
+	% Winning set
+	[Vinf, V1] = ts.win_primal(A, B, C_list, 'exists', Vinf);
+
+	% Candidate set
+	C = union(setdiff(ts.pre(Vinf, 1:2, 'exists', 'exists'), Vinf), ...
+	          setdiff(B, V1));
+	if isempty(C) || iter == maxiter
+		break
+	end
+
+	% Split largest cell in candidate set
+	[~, C_index] = max(volume(part(C)));
+	split_index = C(C_index);
+	part.split_cell(split_index);
+
+	% Update TS
+	ts.split_state(split_index);
+
+	% Update transitions
+	for act=1:2
+		for i=[split_index, N+1]
+		    [adj, dim] = part.get_neighbors(i);
+		    for j=adj
+		        if isTransLin(part(i), part(j), act_set{act})
+		            ts.add_transition(i, j, act);
+		        end
+		        if isTransLin(part(j), part(i), act_set{act})
+		            ts.add_transition(j, i, act);
+		        end
+		    end
+
+		    % Out-of-domain
+		    if isTransOutLin(part(i), part.domain, act_set{act})
+		        ts.add_transition(i, N+2, act);
+		    end
+
+		    % Self transitions
+		    if ~isTransientLin(part(i),act_set{act})
+		    	ts.add_transition(i, i, act);
+		    end
+		end
+	end
+
+	iter = iter + 1;
+end
