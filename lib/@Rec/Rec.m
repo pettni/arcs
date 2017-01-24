@@ -21,9 +21,7 @@ classdef Rec<handle
 			% -----
 			%	
 			%	X 	n x 2 matrix defining min and max along each dimension.
-			%		Class: double
-			%	ap 	(array of) APs of of the hyperrectangle. Default: []
-			%		Class: int
+			%	ap 	cell of APs of of the hyperrectangle. Default: {}
 			%
 			% PROPERTIES
 			% ------
@@ -39,7 +37,7 @@ classdef Rec<handle
 			% volume, split, isInside, contains, contains_strictly, getVertices, getVertexI,
 			% getFacetI, isNeighbor, mldivide, plot, projection, toPoly
 			if nargin<2
-				ap = [];
+				ap = {};
 			end
 
 			if size(X,1) ~= 2

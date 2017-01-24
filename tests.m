@@ -25,17 +25,17 @@ function test_pre(testCase)
 	X = [1, 2];
 	U = [1, 2];
 
-	verifyEqual(testCase, s.pre(X, U, 'exists', 'exists'), [3, 4, 5, 6])
-	verifyEqual(testCase, s.pre(X, U, 'exists', 'forall'), [3, 6])
-	verifyEqual(testCase, s.pre(X, U, 'forall', 'exists'), [5, 6])
-	verifyEqual(testCase, s.pre(X, U, 'forall', 'forall'), [6])
+	verifyEqual(testCase, s.pre(X, U, 'exists', 'exists'), uint32([3, 4, 5, 6]))
+	verifyEqual(testCase, s.pre(X, U, 'exists', 'forall'), uint32([3, 6]))
+	verifyEqual(testCase, s.pre(X, U, 'forall', 'exists'), uint32([5, 6]))
+	verifyEqual(testCase, s.pre(X, U, 'forall', 'forall'), uint32([6]))
 
 	s.create_fast()
 
-	verifyEqual(testCase, s.pre(X, U, 'exists', 'exists'), [3, 4, 5, 6])
-	verifyEqual(testCase, s.pre(X, U, 'exists', 'forall'), [3, 6])
-	verifyEqual(testCase, s.pre(X, U, 'forall', 'exists'), [5, 6])
-	verifyEqual(testCase, s.pre(X, U, 'forall', 'forall'), [6])
+	verifyEqual(testCase, s.pre(X, U, 'exists', 'exists'), uint32([3, 4, 5, 6]))
+	verifyEqual(testCase, s.pre(X, U, 'exists', 'forall'), uint32([3, 6]))
+	verifyEqual(testCase, s.pre(X, U, 'forall', 'exists'), uint32([5, 6]))
+	verifyEqual(testCase, s.pre(X, U, 'forall', 'forall'), uint32([6]))
 end
 
 function test_until(testCase)
@@ -48,19 +48,19 @@ function test_until(testCase)
 	s.add_transition(5, 5, 1);
 	s.add_transition(5, 4, 1);
 
-	verifyEqual(testCase, s.win_until(1:5, [3], 'forall'), [2, 3, 4])
+	verifyEqual(testCase, s.win_until(1:5, [3], 'forall'), uint32([2, 3, 4]))
 
 	s.add_progress_group([1], [1, 2]);
 
-	verifyEqual(testCase, s.win_until(1:5, [3], 'forall'), [1, 2, 3, 4])
+	verifyEqual(testCase, s.win_until(1:5, [3], 'forall'), uint32([1, 2, 3, 4]))
 
-	verifyEqual(testCase, s.win_primal(1:5, [3, 5], {1:5}, 'exists'), 1:5)
+	verifyEqual(testCase, s.win_primal(1:5, [3, 5], {1:5}, 'exists'), uint32(1:5))
 
 	s.create_fast()
 
-	verifyEqual(testCase, s.win_until(1:5, [3], 'forall'), [1, 2, 3, 4])
+	verifyEqual(testCase, s.win_until(1:5, [3], 'forall'), uint32([1, 2, 3, 4]))
 
-	verifyEqual(testCase, s.win_primal(1:5, [3, 5], {1:5}, 'exists'), 1:5)
+	verifyEqual(testCase, s.win_primal(1:5, [3, 5], {1:5}, 'exists'), uint32(1:5))
 end
 
 function test_primal1(testCase)
@@ -88,19 +88,19 @@ function test_primal1(testCase)
     C2 = [2];
     verifyEqual(testCase, ...
     			s.win_primal(safe, 1:6, {C1, C2}, 'exists'), ...
-                [1 2 3 4])
+                uint32([1 2 3 4]))
     verifyEqual(testCase, ...
     			s.win_primal(safe, 1:6, {C1, C2}, 'forall'), ...
-                [])
+                uint32([]))
 
     s.create_fast()
 
     verifyEqual(testCase, ...
     			s.win_primal(safe, 1:6, {C1, C2}, 'exists'), ...
-                [1 2 3 4])
+                uint32([1 2 3 4]))
     verifyEqual(testCase, ...
     			s.win_primal(safe, 1:6, {C1, C2}, 'forall'), ...
-                [])
+                uint32([]))
 
 end
 
@@ -128,19 +128,19 @@ function test_primal2(testCase)
 
 	verifyEqual(testCase, ...
 				s.win_primal(tr, tr, {c1, c2}, 'exists'), ...
-				[])
+				uint32([]))
 
 	s.add_progress_group([1], [3, 4, 5])
 
 	verifyEqual(testCase, ...
 				s.win_primal(tr, tr, {c1, c2}, 'exists'), ...
-				tr)
+				uint32(tr))
 
     s.create_fast()
 
 	verifyEqual(testCase, ...
 				s.win_primal(tr, tr, {c1, c2}, 'exists'), ...
-				tr)
+				uint32(tr))
 
 end
 
@@ -186,21 +186,21 @@ function test_primal3(testCase)
     % win(<>C || <>[]A || <>[]B) = win([]cC && []<>cA && []<>cB )^c
     verifyEqual(testCase, ...
     			s.win_primal(cC, 1:7, {cA, cB}, 'forall'), ...
-    			[])
+    			uint32([]))
 
     verifyEqual(testCase, ...
     			s.win_primal(cC, 1:7, {cA, cB}, 'exists'), ...
-    			sort(setdiff(1:7, 1:5)))
+    			uint32(sort(setdiff(1:7, 1:5))))
 
     s.create_fast()
 
     verifyEqual(testCase, ...
     			s.win_primal(cC, 1:7, {cA, cB}, 'forall'), ...
-    			[])
+    			uint32([]))
 
     verifyEqual(testCase, ...
     			s.win_primal(cC, 1:7, {cA, cB}, 'exists'), ...
-    			sort(setdiff(1:7, 1:5)))
+    			uint32(sort(setdiff(1:7, 1:5))))
 
 
 end

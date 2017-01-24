@@ -11,22 +11,6 @@ classdef Partition<handle
 	methods
 		function r = Partition(domain)
 			% PARTITION: Create a Partition object
-			%
-			% SYNTAX
-			% ------
-			%
-			%	part = Partition(domain)
-			% 
-			% INPUT
-			% -----
-			%	
-			%	domain 	domain of the Partition
-			%
-			% SEE ALSO
-			% --------
-			%
-			% 	Partition/add_area (used to refine the partition), 
-			% 	split_cell, get_neighbors, Partition/plot, get_all_aps, get_cells_with_ap, add_aps
 			r.dim = domain.dim;
 			r.domain = domain;
 			r.cell_list = [domain];
@@ -34,23 +18,9 @@ classdef Partition<handle
 		end
 
 		function add_area(part, area)
-			% ADD_AREA: Adds a cell with to the partition. This new cell is subtracted from existing cells,
-			% so existing AP's will not be preserved.
-			%
-			% SYNTAX
-			% ------
-			%
-			%	part.add_area(cell)
-			% 
-			% INPUT
-			% -----
-			%	
-			%	cell 	the new cell to add
-			%
-			% OUTPUT
-			% ------
-			%
-			% 	none
+			% Adds a cell with to the partition. This new cell
+			% is subtracted from existing cells, so existing AP's
+			% may not be preserved.
 			part.cell_list = [mldivide(part.cell_list, area) area];
 		end
 
@@ -122,7 +92,7 @@ classdef Partition<handle
 
 		function ret = get_all_aps(part)
 			% Return a list of all APs present in the partition
-			ret = [];
+			ret ={};
 			for c = part.cell_list
 				ret = union(ret, c.ap);
 			end
@@ -130,7 +100,7 @@ classdef Partition<handle
 
 		function ret = get_cells_with_ap(part, ap)
 			% Return indices of cells with a given set of APs
-			% if ap = [], return cells without an AP
+			% if ap = {}, return cells without an AP
 			ret = [];
 			if isempty(ap)
 				for i = 1:length(part.cell_list)

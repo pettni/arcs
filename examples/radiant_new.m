@@ -5,8 +5,10 @@ ops = sdpsettings('solver','sedumi','cachesolvers',1,'verbose',0);
 tic
 
 domain = Rec([20 28; 20 28; 20 28]);
-goal_set = Rec([21 27; 22 25; 22 25], 1);
-% unsafe_set = Rec([27.7 28; 27 28; 27.2 28], 2);
+goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
+unsafe_set = Rec([27.7 28; 27 28; 27.2 28], {'UNSAFE'});
+
+maxiter = 100;
 
 load('radiant_data/a1.mat')
 load('radiant_data/a2.mat')
@@ -26,7 +28,7 @@ act_set={fx1,fx2};
 % Build initial partition
 part = Partition(domain);
 part.add_area(goal_set);
-% part.add_area(unsafe_set)
+part.add_area(unsafe_set)
 part.check();   % sanity check
 
 N = length(part);
@@ -80,9 +82,10 @@ end
 % SYNTHESIS %
 %%%%%%%%%%%%%
 
+tic
+
 Win = [];
 V1 = [];
-maxiter = 100;
 iter = 0;
 while true 	
 
@@ -98,18 +101,14 @@ while true
 
 	% Want [] A && <>[] B
 	A = 1:N;
-	% A = setdiff(1:N, part.get_cells_with_ap(2));
-	B = part.get_cells_with_ap(1);
+	A = setdiff(1:N, part.get_cells_with_ap({'UNSAFE'}));
+	B = part.get_cells_with_ap({'SET'});
 	C_list = {1:N};
 
-	% Create fast-access matrices
-	ts.create_fast();
-
 	% Winning set
-	[Vlist_t, ~] = ts.win_primal(A, B, C_list, 'exists', Win);
+	[Win, Vlist_t, ~] = ts.win_primal(A, B, C_list, 'exists', Win);
 	
 	if length(Vlist_t) > 0
-		Win = Vlist_t{end};
 		V1 = Vlist_t{1};
 	end
 
@@ -158,3 +157,5 @@ end
 
 % Get clean control strat
 [Vlist, Klist] = ts.win_primal(A, B, C_list, 'exists');
+
+toc
