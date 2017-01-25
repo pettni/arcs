@@ -1,6 +1,6 @@
 classdef Partition<handle
 
-properties (SetAccess=protected)
+  properties (SetAccess=protected)
     dim;  % Dimension of partition
     cell_list; % List of cells
     domain;  % Domain
