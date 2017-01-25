@@ -1,9 +1,4 @@
 clear all;
-addpath('../lib')
-global ops
-ops = sdpsettings('solver','sedumi','cachesolvers',1,'verbose',0);
-tic
-
 domain = Rec([20 28; 20 28; 20 28]);
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
 % unsafe_set = Rec([27.7 28; 27 28; 27.2 28], {'UNSAFE'});
