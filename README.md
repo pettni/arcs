@@ -24,7 +24,7 @@ run(tests)
 Run an example:
 ```
 cd examples/
-radiant_new
+linear_engine
 ```
 
 ## Authors
