@@ -13,7 +13,7 @@ classdef TransSyst<handle
 		pg_U = {};
 		pg_G = {};
 
-		% Fastaccess_first
+		% Pre-computed pre_all and post maps for speed
 		fast_post = {};
 		fast_pre_all = {};
 		fast_enabled = false;
