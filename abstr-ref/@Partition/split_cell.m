@@ -1,13 +1,15 @@
-function [ind1, ind2] = split_cell(part, ind, dim)
+function split_cell(part, ind, dim)
   % SPLIT_CELL: Split a cell in the partition, which increases the number of cells by 1.
   % The adjacency matrix is updated automatically.
+  %
+  % If there is an associated transition system, this is also updated
   % 
   % SYNTAX
   % ------
   %
-  % [io,jo] = part.split_cell()
-  % [io,jo] = part.split_cell(i)
-  % [io,jo] = part.split_cell(i, dim)
+  % part.split_cell()
+  % part.split_cell(i)
+  % part.split_cell(i, dim)
   % 
   % INPUT
   % -----
@@ -33,7 +35,7 @@ function [ind1, ind2] = split_cell(part, ind, dim)
   % split cell number ind along dimension dim
   [p1 p2] = split(part.cell_list(ind),dim);
 
-  %%% contstruct adjacency to be filled %%%
+  %%% construct adjacency to be filled %%%
   new_adj = [part.adjacency zeros(N,1); zeros(1, N+1)];
   new_adj(ind,:) = 0;
   new_adj(:,ind) = 0;
@@ -76,4 +78,74 @@ function [ind1, ind2] = split_cell(part, ind, dim)
   part.adjacency = new_adj;
   part.adjacency_outside = new_adj_out;
   ind1=ind; ind2=N+1;
+
+  if isempty(part.ts)
+    return
+  end
+
+  % remove all transitions pertaining to ind1
+  for i=part.ts.num_trans():-1:1
+    if part.ts.state1(i) == ind1 || part.ts.state2(i) == ind1
+      part.ts.state1(i) = [];
+      part.ts.state2(i) = [];
+      part.ts.action(i) = [];
+    end
+  end
+
+  % move last (outside) state forward---should only have 
+  % outgoing transitions
+  for i=1:part.ts.num_trans()
+    if part.ts.state2(i) == part.ts.n_s
+      part.ts.state2(i) = part.ts.n_s+1;
+    end
+  end
+
+  % update progress groups
+  for i = 1:length(part.ts.pg_G)
+    if ismember(ind1, part.ts.pg_G{i})
+      part.ts.pg_G{i} = union(part.ts.pg_G{i}, part.ts.n_s);
+    end
+  end
+
+  % increase state counter
+  part.ts.n_s = part.ts.n_s + 1;
+  part.ts.fast_enabled = false;
+
+  % Re-establish transitions
+  for act_num = 1:length(part.act_list)
+
+    act = part.act_list{act_num}{1};
+    dyn_type = part.act_list{act_num}{2};
+    disturbance = part.act_list{act_num}{3};
+
+    if strcmp(dyn_type, 'linear') && ~disturbance
+      trans_fun = @(p1, p2) isTransLin(p1, p2, act);
+      trans_out_fun = @(p1) isTransOutLin(p1, part.domain, act);
+      transient_fun = @(p1) isTransientLin(p1, act);
+    end
+
+    for i = [ind1, ind2]
+      for j = part.get_neighbors(i)
+        if trans_fun(part.cell_list(i), part.cell_list(j))
+          part.ts.add_transition(i, j, act_num);
+        end
+        if trans_fun(part.cell_list(j), part.cell_list(i))
+          part.ts.add_transition(j, i, act_num);
+        end
+      end
+
+      % Out-of-domain
+      if trans_out_fun(part.cell_list(i))
+        part.ts.add_transition(i, N+2, act_num);
+      end
+
+      % Self transitions
+      if ~transient_fun(part.cell_list(i))
+        part.ts.add_transition(i, i, act_num);
+      end
+    end
+  end
+
+  % TODO: check for new progress groups
+
 end

@@ -6,6 +6,8 @@ classdef Partition<handle
     domain;  % Domain
     adjacency; % Sparse matrix containing adjacency information
     adjacency_outside; % Which cells are at the boundary of the domain?
+    ts;       % associated transition system
+    act_list  % list of added modes
   end
 
   methods
@@ -15,6 +17,7 @@ classdef Partition<handle
       r.domain = domain;
       r.cell_list = [domain];
       r.adjacency = [];
+      r.act_list = {};
     end
 
     function add_area(part, area)
@@ -75,9 +78,11 @@ classdef Partition<handle
       % Overload indexing operator to access cells directly
       switch S(1).type
         % call builtin method to access class properties
-      case '.' [varargout{1:nargout}] = builtin('subsref', obj, S);
+      case '.' 
+        [varargout{1:nargout}] = builtin('subsref', obj, S);
         % delegate to cell_list indexing
-      case '()' varargout{1} = obj.cell_list(S.subs{:});
+      case '()'
+        varargout{1} = obj.cell_list(S.subs{:});
       end 
     end
 

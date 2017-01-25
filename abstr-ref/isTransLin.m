@@ -33,7 +33,7 @@ function result = isTransLin(rec1, rec2, vField)
   n = length(irec.getFullDims); % number of remaining dimensions
   for i = 1:2^n % iterate over vertices
     vert = irec.getVertexI(i);
-    if h1*(vField.A*vert'+vField.K) > 0
+    if h1*(vField{1}*vert' + vField{2}) > 0
       result = true;  % there is a flow
       return;
     end

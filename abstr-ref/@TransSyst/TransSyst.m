@@ -1,6 +1,6 @@
 classdef TransSyst<handle
 
-  properties (SetAccess=protected)
+  properties (SetAccess={?Partition})
     n_s;
     n_a;
 
@@ -30,6 +30,13 @@ classdef TransSyst<handle
       ts.state1 = uint32([]);
       ts.state2 = uint32([]);
       ts.action = uint32([]);
+    end
+
+    function numact = add_action(ts)
+      % Add an action, return its number
+      ts.n_a = ts.n_a + 1;
+      numact = ts.n_a;
+      ts.fast_enabled = false;
     end
 
     function create_fast(ts)
@@ -64,36 +71,6 @@ classdef TransSyst<handle
       ts.state1(end+1) = s1;
       ts.state2(end+1) = s2;
       ts.action(end+1) = a;
-      ts.fast_enabled = false;
-    end
-
-    function split_state(ts, s1)
-      % Split state number n:
-      % remove all transitions pertaining to s1
-      for i=ts.num_trans():-1:1
-        if ts.state1(i) == s1 || ts.state2(i) == s1
-          ts.state1(i) = [];
-          ts.state2(i) = [];
-          ts.action(i) = [];
-        end
-      end
-
-      % move last (outside) state forward
-      for i=1:ts.num_trans()
-        if ts.state2(i) == ts.n_s
-          ts.state2(i) = ts.n_s+1;
-        end
-      end
-
-      % update progress groups
-      for i = 1:length(ts.pg_G)
-        if ismember(s1, ts.pg_G{i})
-          ts.pg_G{i} = union(ts.pg_G{i}, ts.n_s);
-        end
-      end
-
-      % increase state counter
-      ts.n_s = ts.n_s + 1;
       ts.fast_enabled = false;
     end
 

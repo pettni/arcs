@@ -43,6 +43,7 @@ Necmiye Ozay, University of Michigan
  - Additional tests
     - Control strategies
     - System-level test
+ - Improve documentation of function
 
 ## References
 

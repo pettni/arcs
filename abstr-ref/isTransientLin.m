@@ -6,8 +6,8 @@ function result = isTransientLin(rec1,vField)
 % N.O., June, 2013
 % Caltech
 
-Ad = vField.A;
-Kd = vField.K;
+Ad = vField{1};
+Kd = vField{2};
 
 n = length(Ad);
 
