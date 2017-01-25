@@ -7,8 +7,8 @@ clf; hold on
 win_min = [Inf Inf Inf];
 win_max = [-Inf -Inf -Inf];
 for rec = part(Win)
-	win_max = max(win_max, rec.xmax);
-	win_min = min(win_min, rec.xmin);
+  win_max = max(win_max, rec.xmax);
+  win_min = min(win_min, rec.xmin);
 end
 
 lims = [part.domain.xmin; part.domain.xmax];
@@ -24,38 +24,34 @@ plot(winrec, 'black', 0.05, 0);
 
 for i=1:length(xvec_list)
 
-	xvec = xvec_list{i};
-	avec = avec_list{i};
-	tvec = (1:size(xvec, 2)) * dt/3600;
+  xvec = xvec_list{i};
+  avec = avec_list{i};
+  tvec = (1:size(xvec, 2)) * dt/3600;
 
-	ptr0 = 1;
-	ptr1 = 1;
-	a = avec(ptr0);
+  ptr0 = 1;
+  ptr1 = 1;
+  a = avec(ptr0);
 
-	while tvec(ptr1) <= 0.25
-		
-		if avec(ptr1) ~= a
-
-			clr = [a==1 0 a==2];
-			plot3(xvec(1, floor(linspace(ptr0, ptr1, 10))), ...
-				  xvec(2, floor(linspace(ptr0, ptr1, 10))), ...
-				  xvec(3, floor(linspace(ptr0, ptr1, 10))), ...
-				  'color', clr)
-			ptr0 = ptr1;
-
-			a = avec(ptr0);
-		else
-			ptr1 = ptr1 + 1;
-		end
-
-	end
-
-	plot3(xvec(1,1), xvec(2,1), xvec(3,1), 'o', 'color', 'black');
+  while tvec(ptr1) <= 0.25
+    
+    if avec(ptr1) ~= a
+      clr = [a==1 0 a==2];
+      plot3(xvec(1, floor(linspace(ptr0, ptr1, 10))), ...
+          xvec(2, floor(linspace(ptr0, ptr1, 10))), ...
+          xvec(3, floor(linspace(ptr0, ptr1, 10))), ...
+          'color', clr)
+      ptr0 = ptr1;
+      a = avec(ptr0);
+    else
+      ptr1 = ptr1 + 1;
+    end
+  end
+  plot3(xvec(1,1), xvec(2,1), xvec(3,1), 'o', 'color', 'black');
 end
 
 matlab2tikz('output/radiant_3d.tex','interpretTickLabelsAsTex',true, ...
-		     'width','\figurewidth', 'height', '\figureheight', ...
-		     'parseStrings',false, 'showInfo', false)
+ 'width','\figurewidth', 'height', '\figureheight', ...
+ 'parseStrings',false, 'showInfo', false)
 
 xvec = xvec_list{2};
 avec = avec_list{2};
@@ -80,7 +76,8 @@ switches = find(avec(2:end) ~= avec(1:end-1));
 plot(tvec(switches), 21 * ones(length(switches)), '.', 'color', 'black', 'markersize', 1.5)
 
 matlab2tikz('output/radiant_temp.tex','interpretTickLabelsAsTex',true, ...
-		     'width','\figurewidth', 'height', '\figureheight', ...
-		     'parseStrings',false, 'showInfo', false, ...
-		    'extraAxisOptions', ...
-		    'xmajorgrids=false, ymajorgrids=false, axis x line=bottom, axis y line=left')
+  'width','\figurewidth', 'height', '\figureheight', ...
+  'parseStrings',false, 'showInfo', false, ...
+  'extraAxisOptions', ...
+  'xmajorgrids=false, ymajorgrids=false, axis x line=bottom, axis y line=left')
+  
