@@ -8,21 +8,29 @@ function plot(part, alpha, text)
   if nargin<3
     text = 0;
   end
-  hh = ishold; if (~hh) clf; end
+
+  hh = ishold; 
+  if (~hh) 
+    clf; 
+  end
   hold on;
+
   if ~isempty(part.get_cells_with_ap([]))
     plot(part.cell_list(part.get_cells_with_ap([])), -1, alpha, 1);
   end
+
   aps = part.get_all_aps;
   colors = winter(length(aps));
   h_list = [];
   legend_list = {};
+
   for i=1:length(aps)
-    aplist = part.get_cells_with_ap(aps(i));
+    aplist = part.get_cells_with_ap(aps{i});
     h = plot(part.cell_list(aplist), colors(i,:), alpha, 0);
     h_list = [h_list h];
-    legend_list{end+1} = ['AP ' int2str(aps(i))];
+    legend_list{end+1} = [int2str(aps{i})];
   end
+
   if text
     for i = 1:length(part)
       xc = part.cell_list(i).getMidpoint();

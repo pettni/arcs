@@ -1,4 +1,4 @@
-clear; load('radiant_data/radiant_sol.mat')
+% clear; load('radiant_data/radiant_sol.mat')
 
 figure(1)
 clf; hold on
@@ -15,7 +15,7 @@ lims = [part.domain.xmin; part.domain.xmax];
 xlim([win_min(1), win_max(1)]);
 ylim([win_min(2), win_max(2)]);
 zlim([win_min(3), win_max(3)]);
-view([-82, 15])
+view([-59, 30])
 winrec = Rec([win_min' win_max']);
 
 plot(intersect(goal_set, winrec), 'green', 0.6);
@@ -26,19 +26,19 @@ for i=1:length(xvec_list)
 
   xvec = xvec_list{i};
   avec = avec_list{i};
-  tvec = (1:size(xvec, 2)) * dt/3600;
+  tvec = (1:size(xvec, 2)) * dt / 3600;
 
   ptr0 = 1;
   ptr1 = 1;
   a = avec(ptr0);
 
-  while tvec(ptr1) <= 0.25
+  while tvec(ptr1) <= 35
     
     if avec(ptr1) ~= a
       clr = [a==1 0 a==2];
-      plot3(xvec(1, floor(linspace(ptr0, ptr1, 10))), ...
-          xvec(2, floor(linspace(ptr0, ptr1, 10))), ...
-          xvec(3, floor(linspace(ptr0, ptr1, 10))), ...
+      plot3(xvec(1, floor(linspace(ptr0, ptr1, 100))), ...
+          xvec(2, floor(linspace(ptr0, ptr1, 100))), ...
+          xvec(3, floor(linspace(ptr0, ptr1, 100))), ...
           'color', clr)
       ptr0 = ptr1;
       a = avec(ptr0);
@@ -49,16 +49,16 @@ for i=1:length(xvec_list)
   plot3(xvec(1,1), xvec(2,1), xvec(3,1), 'o', 'color', 'black');
 end
 
-matlab2tikz('output/radiant_3d.tex','interpretTickLabelsAsTex',true, ...
+matlab2tikz('radiant_data/radiant_3d.tex','interpretTickLabelsAsTex',true, ...
  'width','\figurewidth', 'height', '\figureheight', ...
  'parseStrings',false, 'showInfo', false)
 
-xvec = xvec_list{2};
-avec = avec_list{2};
+xvec = xvec_list{3};
+avec = avec_list{3};
 
 figure(2)
 clf; hold on
-ylim([20, 27])
+ylim([20, 28])
 
 plotidx = 1:floor(length(tvec)/500):length(tvec);
 plot(tvec(plotidx), xvec(1, plotidx), 'color', 'green', 'linewidth', 1.25)
@@ -75,7 +75,7 @@ switches = find(avec(2:end) ~= avec(1:end-1));
 
 plot(tvec(switches), 21 * ones(length(switches)), '.', 'color', 'black', 'markersize', 1.5)
 
-matlab2tikz('output/radiant_temp.tex','interpretTickLabelsAsTex',true, ...
+matlab2tikz('radiant_data/radiant_temp.tex','interpretTickLabelsAsTex',true, ...
   'width','\figurewidth', 'height', '\figureheight', ...
   'parseStrings',false, 'showInfo', false, ...
   'extraAxisOptions', ...

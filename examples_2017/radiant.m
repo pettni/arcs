@@ -3,16 +3,10 @@ domain = Rec([20 28; 20 28; 20 28]);
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
 % unsafe_set = Rec([27.7 28; 27 28; 27.2 28], {'UNSAFE'});
 
-maxiter = 100;
-split_goal = false;   % to avoid zeno
+maxiter = 150;
+split_goal = true;   % to avoid zeno
 
-load('radiant_data/a1.mat')
-load('radiant_data/a2.mat')
-load('radiant_data/b1.mat')
-load('radiant_data/b2.mat')
-
-b1(3) = b1(3)/10; 
-b2(3) = b2(3)/10;
+[a1 k1 a2 k2] = radiant_dyn();
 
 tic
 
@@ -34,15 +28,14 @@ part.check();   % sanity check
 
 % Build transition system
 part.create_ts();
-part.add_mode({a1, b1});
-part.add_mode({a2, b2});
+part.add_mode({a1, k1});
+part.add_mode({a2, k2});
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 % SYNTHESIS-REFINEMENT %
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 Win = [];
-V1 = [];
 iter = 0;
 while true
 
@@ -63,29 +56,28 @@ while true
   C_list = {1:N};
 
   % Winning set
-  [Win, Vlist_t] = part.ts.win_primal(A, B, C_list, 'exists', Win);
-  
-  if length(Vlist_t) > 0
-    V1 = Vlist_t{1};
-  end
+  [Win, Cwin] = part.ts.win_primal(A, B, C_list, 'exists', Win);
 
-  % Candidate set
-  C = union(setdiff(part.ts.pre(Win, 1:2, 'exists', 'exists'), Win), ...
-        setdiff(B, V1));
+  % No need to split inside winning set
+  Cwin = setdiff(Cwin, Win);
 
-  if isempty(C) || iter == maxiter
-    % we are done
+  if isempty(Cwin) || iter == maxiter
     break
   end
 
   % Split largest cell in candidate set
-  [~, C_index] = max(volume(part(C)));
-  part.split_cell(C(C_index));
+  [~, C_index] = max(volume(part(Cwin)));
+  [ind1, ind2] = part.split_cell(Cwin(C_index));
+
+  % If we happened to split winning set, update it
+  if ismember(ind1, Win)
+    Win(end+1) = ind2;
+  end
 
   iter = iter + 1;
 end
 
 % Get control strategy
-[~, Vlist, Klist] = part.ts.win_primal(A, B, C_list, 'exists');
+[~, ~, Vlist, Klist] = part.ts.win_primal(A, B, C_list, 'exists');
 
 toc

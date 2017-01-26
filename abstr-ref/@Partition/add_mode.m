@@ -6,13 +6,13 @@ function add_mode(part, act, dist_level)
 	% 
   % Input:
 	%   act = {A, K, E}  in the linear case
-	%   act = [f1; f2; ...; fd],  fi are sdpvar expressions
-  %                             name of disturbance variable is 'd' 
+	%   act = {f, vars}, f is an sdpvar vector in variables 'vars'
+  %
 
-	if strcmp(class(act), 'cell')
-    dyn_type = 'linear';
-  else
+	if strcmp(class(act{1}), 'sdpvar')
     dyn_type = 'polynomial';
+  else
+    dyn_type = 'linear';
   end
 
   disturbance = nargin == 3;
@@ -28,6 +28,13 @@ function add_mode(part, act, dist_level)
     trans_fun = @(p1, p2) isTransLin(p1, p2, act);
     trans_out_fun = @(p1) isTransOutLin(p1, part.domain, act);
     transient_fun = @(p1) isTransientLin(p1, act);
+  end
+
+  if strcmp(dyn_type, 'polynomial') && ~disturbance
+    % Degrees seem arbitrary
+    trans_fun = @(p1, p2) isTransNLin(p1, p2, act, 2);
+    trans_out_fun = @(p1) isTransOutNLin(p1, part.domain, act, 2);
+    transient_fun = @(p1) isTransientNLin(p1, act, 4);
   end
 
   % Figure out transitions

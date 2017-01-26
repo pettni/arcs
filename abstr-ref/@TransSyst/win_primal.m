@@ -1,4 +1,4 @@
-function [V, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
+function [V, CV, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
   % Compute winning set of
   %  []A && <>[]B &&_i []<>C_i
   % under (quant1, forall)-controllability
@@ -7,16 +7,16 @@ function [V, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
   % Returns a sorted set
   
   if nargin<6
-    V = uint32([]);
+    V = [];
   end
+
+  Vlist = {};
+  Klist = {};
 
   V = uint32(V);
   A = sort(A);
 
   ts.create_fast();
-
-  Vlist = {};
-  Klist = {};
 
   while true
     Z = ts.pre(V, 1:ts.n_a, quant1, 'forall');
@@ -34,14 +34,17 @@ function [V, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
       break
     end
 
-    if nargout > 1
-      Vlist{end+1} = Vt;
-    end
-
     if nargout > 2
       Klist{end+1} = Kt;
+      Vlist{end+1} = Vt;
     end
 
     V = Vt;
   end
+
+  % Candidate set
+  % Todo: Add third part!
+  CV = union(setdiff(ts.pre(V, 1:ts.n_a, quant1, 'exists'), V), ...
+        setdiff(B, ts.win_always(intersect(A, B), quant1)));
+
 end

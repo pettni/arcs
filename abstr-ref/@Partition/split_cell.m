@@ -1,4 +1,4 @@
-function split_cell(part, ind, dim)
+function [ind1, ind2] = split_cell(part, ind, dim)
   % SPLIT_CELL: Split a cell in the partition, which increases the number of cells by 1.
   % The adjacency matrix is updated automatically.
   %
@@ -77,7 +77,12 @@ function split_cell(part, ind, dim)
   part.cell_list(end+1) = p2;     % and one at the end
   part.adjacency = new_adj;
   part.adjacency_outside = new_adj_out;
+
   ind1=ind; ind2=N+1;
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % IF THERE IS A TS, UPDATE IT %
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   if isempty(part.ts)
     return
@@ -122,6 +127,13 @@ function split_cell(part, ind, dim)
       trans_fun = @(p1, p2) isTransLin(p1, p2, act);
       trans_out_fun = @(p1) isTransOutLin(p1, part.domain, act);
       transient_fun = @(p1) isTransientLin(p1, act);
+    elseif strcmp(dyn_type, 'polynomial') && ~disturbance
+      % Degrees arbitrary for now
+      trans_fun = @(p1, p2) isTransNLin(p1, p2, act, 2);
+      trans_out_fun = @(p1) isTransOutNLin(p1, part.domain, act, 2);
+      transient_fun = @(p1) isTransientNLin(p1, act, 4);
+    else
+      error('encountered unknown mode');
     end
 
     for i = [ind1, ind2]

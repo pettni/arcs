@@ -1,13 +1,16 @@
-function result = isTransNLin(rec1, rec2, vField, vars)
+function result = isTransNLin(rec1, rec2, act, deg)
 
 % Function to check if there exists a transition from some point in rec1
-% to some point in rec2 under the _linear_ vector field vField.
+% to some point in rec2 under the _linear_ vector field fx.
 % The computation is done by evaluating the normal flow at corner points.
 % Return true if there exists a flow and false if one can 
 % find a certificate that guarantees the non-existence.
 
+    fx = act{1};
+    vars = act{2};
+
     irec = intersect(rec1,rec2);
-    vField = vField{1};
+    fx = fx{1};
     % overlapping
     if irec.isFullDim
         warning('isTransLinRec: was called with overlapping Recs - returning true');
@@ -33,13 +36,13 @@ function result = isTransNLin(rec1, rec2, vField, vars)
 
     result = true;
     n = length(irec.getFullDims); % number of remaining dimensions
-    poly = -h1*(vField);
+    poly = -h1*(fx);
     F = [];
     for i=1:length(vars)
         F = [F; irec.xmin(i)<=vars(i)<=irec.xmax(i)];
     end
     global ops;
-    diagnosis = solvemoment(F,poly,ops,4);
+    diagnosis = solvemoment(F, poly, ops, deg);
     if (diagnosis.problem==0 || diagnosis.problem==4) & value(poly)>0
         result = false;  % there is no flow
     end

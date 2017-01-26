@@ -1,11 +1,13 @@
 % simulate radiant example using Euler forward
 
 numsim = 50;
-maxT = 1.5 * 3600;  % seconds
-dt = 1;             % seconds
+maxT = 48 * 3600;  % seconds
+dt = 15;            % seconds
 
 xvec_list = {};
 avec_list = {};
+
+act_set = {{a1, k1}, {a2, k2}};
 
 % Assume winning set is a square
 win_min = [Inf Inf Inf];
@@ -15,10 +17,16 @@ for rec = part(Win)
   win_min = min(win_min, rec.xmin);
 end
 
+boringset = Rec([win_min + 0.2*(win_max - win_min);
+                win_max - 0.2*(win_max - win_min)]');
+
 randseed(1);
 
 for sim = 1:numsim
   x = win_min' + rand(3,1) .* (win_max' - win_min');
+  while isInside(boringset, x)
+    x = win_min' + rand(3,1) .* (win_max' - win_min');
+  end
   s = part.find_cell(x);
   t = 0;
 
@@ -31,10 +39,10 @@ for sim = 1:numsim
   acts = Klist{k_counter}{1}(s);
   act = acts(1);
 
-  xvec = zeros(3,0);
-  avec = zeros(1,0);
+  xvec = zeros(3,ceil(maxT/dt));
+  avec = zeros(1,ceil(maxT/dt));
 
-  while (t < maxT)
+  for i=1:ceil(maxT/dt)
 
     if ~isInside(part(s), x)
       % Discrete state changed
@@ -55,11 +63,10 @@ for sim = 1:numsim
     % Sanity checks
     assert(isInside(part(s), x))
     assert(ismember(s, Vlist{k_counter}))
-
-    x = x + (act_set{act}.A * x + act_set{act}.K) * dt;
+    x = x + (act_set{act}{1} * x + act_set{act}{2}) * dt;
     t = t + dt;
-    xvec(:, end+1) = x;
-    avec(:, end+1) = act;
+    xvec(:, i) = x;
+    avec(:, i) = act;
   end
 
   xvec_list{end+1} = xvec;
@@ -77,4 +84,4 @@ end
 
 disp(['all inside: ', num2str(all_in)])
 
-save('radiant_data/radiant_sol.mat', 'part', 'ts', 'Win', 'xvec_list', 'avec_list', 'goal_set', 'dt')
+save('radiant_data/radiant_sol.mat', 'part', 'Win', 'xvec_list', 'avec_list', 'goal_set', 'dt')
