@@ -1,6 +1,6 @@
 clear all;
 maxiter = 650;
-split_inv = false;   % to avoid zeno
+split_inv = true;   % to avoid zeno
 
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
 

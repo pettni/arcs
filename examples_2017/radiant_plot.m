@@ -15,7 +15,7 @@ xlim([win_min(1), win_max(1)]);
 ylim([win_min(2), win_max(2)]);
 zlim([win_min(3), win_max(3)]);
 
-view([-95, 23])
+view([-82, 45])
 winrec = Rec([win_min' win_max']);
 
 plot(intersect(goal_set, winrec), 'green', 0.6);
@@ -52,12 +52,17 @@ matlab2tikz('radiant_data/radiant_3d.tex','interpretTickLabelsAsTex',true, ...
  'width','\figurewidth', 'height', '\figureheight', ...
  'parseStrings',false, 'showInfo', false)
 
-xvec = xvec_list{15};
-avec = avec_list{15};
 
-figure(2)
+for i=18
+figure(i+1)
+
+xvec = xvec_list{i};
+avec = avec_list{i};
+
+
 clf; hold on
 ylim([20, 27])
+xlim([0, 72])
 
 plotidx = 1:floor(length(tvec)/500):length(tvec);
 plot(tvec(plotidx), xvec(1, plotidx), 'color', 'green', 'linewidth', 1.25)
@@ -65,7 +70,7 @@ plot(tvec(plotidx), xvec(2, plotidx), 'color', 'blue', 'linewidth', 1.25)
 plot(tvec(plotidx), xvec(3, plotidx), 'color', 'red', 'linewidth', 1.25)
 % plot([tvec(1) tvec(end)], [22 22], '--', 'color', 'green', 'linewidth', 1.25)
 % plot([tvec(1) tvec(end)], [25 25], '--', 'color', 'green', 'linewidth', 1.25)
-legend('$T_C$', '$T_1$', '$T_2$')
+legend('$T_c$', '$T_1$', '$T_2$')
 
 ylabel('Temperature [$^\circ$C]')
 xlabel('Time $t$ [hrs]')
@@ -73,6 +78,7 @@ xlabel('Time $t$ [hrs]')
 switches = find(avec(2:end) ~= avec(1:end-1));
 
 plot(tvec(switches), 21 * ones(length(switches)), '.', 'color', 'black', 'markersize', 1.5)
+end 
 
 matlab2tikz('radiant_data/radiant_temp.tex','interpretTickLabelsAsTex',true, ...
   'width','\figurewidth', 'height', '\figureheight', ...
