@@ -1,11 +1,13 @@
-function recvec = mldivide(rec1,rec2)
+function recvec = mldivide(rec1, rec2)
   % Return the set difference rec1 \ rec2
   % represented as an array of fully dimensional Rec's
   % 
-  % Output: Array of Rec representing set difference. Non-fully dimensional Rec's are removed.
+  % Output: Array of Rec representing set difference. 
+  %         Non-fully dimensional Rec's are removed.
   %
+
   if ~intersects(rec1, rec2)
-    recvec = [rec1];
+    recvec = rec1;
     return;
   end
 
@@ -28,7 +30,11 @@ function recvec = mldivide(rec1,rec2)
   recvec = [];
   split_poly = rec1;
 
-  for i=1:rec2.dim
+  % Sort the dimensions of rec1 from largest to smallest
+  % to make parts as uniform as possible in size
+  [~, I] = sort(rec1.xmax - rec1.xmin, 2, 'descend');
+
+  for i=I
     X_min = [-Inf*ones(1,rec2.dim); Inf*ones(1,rec2.dim)];
     X_min(2,i) = rec2.xmin(i);
     X_mid = [-Inf*ones(1,rec2.dim); Inf*ones(1,rec2.dim)];
@@ -37,8 +43,9 @@ function recvec = mldivide(rec1,rec2)
     X_max = [-Inf*ones(1,rec2.dim); Inf*ones(1,rec2.dim)];
     X_max(1,i) = rec2.xmax(i);
     recvec = [recvec intersect(Rec(X_min), split_poly) intersect(Rec(X_max), split_poly)];
-    split_poly = intersect(Rec(X_mid),split_poly); 
+    split_poly = intersect(Rec(X_mid), split_poly); 
   end
+
   recvec = removeNonFullDim(recvec);
 end
 

@@ -15,12 +15,8 @@ function plot(part, alpha, text)
   end
   hold on;
 
-  if ~isempty(part.get_cells_with_ap([]))
-    plot(part.cell_list(part.get_cells_with_ap([])), -1, alpha, 1);
-  end
-
   aps = part.get_all_aps;
-  colors = winter(length(aps));
+  colors = jet(length(aps)+1);
   h_list = [];
   legend_list = {};
 
@@ -28,8 +24,10 @@ function plot(part, alpha, text)
     aplist = part.get_cells_with_ap(aps{i});
     h = plot(part.cell_list(aplist), colors(i,:), alpha, 0);
     h_list = [h_list h];
-    legend_list{end+1} = [int2str(aps{i})];
+    legend_list{end+1} = [aps{i}];
   end
+
+  h = plot(part.cell_list(part.get_cells_with_ap([])), colors(end,:), alpha, 0);
 
   if text
     for i = 1:length(part)

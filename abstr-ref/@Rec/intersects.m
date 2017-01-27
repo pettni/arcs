@@ -1,18 +1,18 @@
 function ret = intersects(rec1, rec2)
   % return true if rec1 and rec2 intersect
-  if length(rec1)>1
+  if length(rec1)>1 || length(rec2)>1
     ret = false;
-    for rec = rec1
-      if intersects(rec, rec2)
-        ret = true;
-        return;
+    for i=1:length(rec1)
+      for j=1:length(rec2)
+        if intersects(rec1(i), rec2(j))
+          ret = true;
+          return;
+        end
       end
     end
-    return;
+    return
   end
-  if length(rec2)>1
-    ret = intersects(rec2, rec1);
-    return;
-  end
-  ret = all(rec1.xmax>=rec2.xmin) || all(rec1.xmin<=rec2.xmax);
+
+  ret = all(max(rec1.xmin, rec2.xmin) <= min(rec1.xmax, rec2.xmax));
+
 end

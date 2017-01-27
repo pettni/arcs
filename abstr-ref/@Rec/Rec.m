@@ -136,9 +136,20 @@ classdef Rec<handle
 
     function ret = isInside(rec, point)
       % Return true if point is inside rec
+      if length(rec) > 1
+        ret = false;
+        for i=1:length(rec)
+          if isInside(rec(i), point)
+            ret = true;
+          end
+        end
+        return
+      end
+
       if length(point) ~= rec.dim
         error('isInside: dimension mismatch')
       end
+
       point = reshape(point,1,length(point));
       ret = all(rec.xmin<=point) && all(point<=rec.xmax);
     end
