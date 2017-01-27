@@ -10,6 +10,16 @@ function [V, CV, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
     V = [];
   end
 
+  if isempty(A)
+    A = uint32(1:ts.n_s);
+  end
+  if isempty(B)
+    B = uint32(1:ts.n_s);
+  end
+  if isempty(C_list)
+    C_list = {uint32(1:ts.n_s)};
+  end
+
   Vlist = {};
   Klist = {};
 

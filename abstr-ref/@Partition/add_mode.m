@@ -1,41 +1,18 @@
-function add_mode(part, act, dist_level)
-	% create_ts: add action corresponding to a dynamical mode
+function add_mode(part, fx)
+	% create_ts: add fxion corresponding to a dynamical mode
 	%
 	% Linear dynamics:      \dot x = A x + K + E d
 	% Polynomial dynamics:  \dot x = f(x, d), f polynomial
-	% 
+	%                                d \in dist_rec
   % Input:
-	%   act = {A, K, E}  in the linear case
-	%   act = {f, vars}, f is an sdpvar vector in variables 'vars'
+	%   fx = {A, K, E, dist_rec}  in the linear case (last two optional)
+	%   fx = {f, vars, dist_rec}, f is an sdpvar vector in variables 'vars'
   %
 
-	if strcmp(class(act{1}), 'sdpvar')
-    dyn_type = 'polynomial';
-  else
-    dyn_type = 'linear';
-  end
-
-  disturbance = nargin == 3;
-
-  if strcmp(dyn_type, 'linear') && disturbance
-    error('Linear case with disturbance not implemented')
-  end
-
   act_n = part.ts.add_action();
-  part.act_list{act_n} = {act, dyn_type, disturbance};  % save dyn info
+  part.act_list{act_n} = fx;
 
-  if strcmp(dyn_type, 'linear') && ~disturbance
-    trans_fun = @(p1, p2) isTransLin(p1, p2, act);
-    trans_out_fun = @(p1) isTransOutLin(p1, part.domain, act);
-    transient_fun = @(p1) isTransientLin(p1, act);
-  end
-
-  if strcmp(dyn_type, 'polynomial') && ~disturbance
-    % Degrees seem arbitrary
-    trans_fun = @(p1, p2) isTransNLin(p1, p2, act, 2);
-    trans_out_fun = @(p1) isTransOutNLin(p1, part.domain, act, 2);
-    transient_fun = @(p1) isTransientNLin(p1, act, 4);
-  end
+  [trans_fun, trans_out_fun, transient_fun] = get_fcns(fx);
 
   % Figure out transitions
   for i=1:length(part)
@@ -48,7 +25,7 @@ function add_mode(part, act, dist_level)
     end
 
     % Out-of-domain
-    if trans_out_fun(part.cell_list(i))
+    if trans_out_fun(part.cell_list(i), part.domain)
       part.ts.add_transition(i, length(part)+1, act_n);
     end
 

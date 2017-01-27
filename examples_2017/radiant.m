@@ -1,35 +1,28 @@
 clear all;
-domain = Rec([20 28; 20 28; 20 28]);
+maxiter = 650;
+split_inv = false;   % to avoid zeno
+
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
-% unsafe_set = Rec([27.7 28; 27 28; 27.2 28], {'UNSAFE'});
 
-maxiter = 150;
-split_goal = true;   % to avoid zeno
+[a1 k1 e1 a2 k2 e2] = radiant_dyn();
 
-[a1 k1 a2 k2] = radiant_dyn();
+% Disturbance: unit is W/m^2 --- heat added per unit floor area
+dmax = 3;
+d_rec = Rec([-dmax -dmax; dmax dmax]);
+
+act_set = {{a1, k1, e1, d_rec}, {a2, k2, e2, d_rec}};
 
 tic
 
 % Build initial partition
-part = Partition(domain);
+part = Partition(Rec([20 28; 20 28; 20 28]));
 part.add_area(goal_set);
-
-% Split goal set to reduce Zeno
-if split_goal
-  for i=1:128
-    goal = part.get_cells_with_ap('SET');
-    [~, C_index] = max(volume(part(goal)));
-    split_index = goal(C_index);
-    part.split_cell(split_index);
-  end
-end
-
 part.check();   % sanity check
 
 % Build transition system
 part.create_ts();
-part.add_mode({a1, k1});
-part.add_mode({a2, k2});
+part.add_mode(act_set{1});
+part.add_mode(act_set{2});
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 % SYNTHESIS-REFINEMENT %
@@ -42,21 +35,15 @@ while true
   if isempty(Win)
     vol = 0;
   else
-    vol = sum(volume(part(Win)))/volume(domain);
+    vol = sum(volume(part(Win)))/volume(part.domain);
   end
 
-  N = length(part);
-  
   time = toc;
-  disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(N), ', winning set volume ', num2str(vol)])
+  disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ', winning set volume ', num2str(vol)])
 
-  % Solve [] A && <>[] B &&_i []<> C_list{i}
-  A = 1:N;
-  B = part.get_cells_with_ap({'SET'});
-  C_list = {1:N};
-
-  % Winning set
-  [Win, Cwin] = part.ts.win_primal(A, B, C_list, 'exists', Win);
+  % Solve <>[] 'SET'
+  [Win, Cwin] = part.ts.win_primal([], part.get_cells_with_ap({'SET'}), ...
+                                   [], 'exists', Win);
 
   % No need to split inside winning set
   Cwin = setdiff(Cwin, Win);
@@ -77,7 +64,19 @@ while true
   iter = iter + 1;
 end
 
+% Split final set to eliminate Zeno
+if split_inv
+  inv_set = part.ts.win_primal(part.get_cells_with_ap({'SET'}), ...
+                               [], [], 'exists');
+  for i=1:6^3
+    [~, C_index] = max(volume(part(inv_set)));
+    [ind1, ind2] = part.split_cell(inv_set(C_index));
+    inv_set = union(inv_set, ind2);
+  end
+end
+
 % Get control strategy
-[~, ~, Vlist, Klist] = part.ts.win_primal(A, B, C_list, 'exists');
+[Win, ~, Vlist, Klist] = ...
+    part.ts.win_primal([], part.get_cells_with_ap({'SET'}), [], 'exists');
 
 toc

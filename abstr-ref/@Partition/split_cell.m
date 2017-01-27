@@ -119,22 +119,8 @@ function [ind1, ind2] = split_cell(part, ind, dim)
   % Re-establish transitions
   for act_num = 1:length(part.act_list)
 
-    act = part.act_list{act_num}{1};
-    dyn_type = part.act_list{act_num}{2};
-    disturbance = part.act_list{act_num}{3};
-
-    if strcmp(dyn_type, 'linear') && ~disturbance
-      trans_fun = @(p1, p2) isTransLin(p1, p2, act);
-      trans_out_fun = @(p1) isTransOutLin(p1, part.domain, act);
-      transient_fun = @(p1) isTransientLin(p1, act);
-    elseif strcmp(dyn_type, 'polynomial') && ~disturbance
-      % Degrees arbitrary for now
-      trans_fun = @(p1, p2) isTransNLin(p1, p2, act, 2);
-      trans_out_fun = @(p1) isTransOutNLin(p1, part.domain, act, 2);
-      transient_fun = @(p1) isTransientNLin(p1, act, 4);
-    else
-      error('encountered unknown mode');
-    end
+    [trans_fun, trans_out_fun, transient_fun] = ...
+      get_fcns(part.act_list{act_num});
 
     for i = [ind1, ind2]
       for j = part.get_neighbors(i)
@@ -147,7 +133,7 @@ function [ind1, ind2] = split_cell(part, ind, dim)
       end
 
       % Out-of-domain
-      if trans_out_fun(part.cell_list(i))
+      if trans_out_fun(part.cell_list(i), part.domain)
         part.ts.add_transition(i, N+2, act_num);
       end
 

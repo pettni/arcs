@@ -11,11 +11,11 @@ for rec = part(Win)
   win_min = min(win_min, rec.xmin);
 end
 
-lims = [part.domain.xmin; part.domain.xmax];
 xlim([win_min(1), win_max(1)]);
 ylim([win_min(2), win_max(2)]);
 zlim([win_min(3), win_max(3)]);
-view([-59, 30])
+
+view([-95, 23])
 winrec = Rec([win_min' win_max']);
 
 plot(intersect(goal_set, winrec), 'green', 0.6);
@@ -32,14 +32,13 @@ for i=1:length(xvec_list)
   ptr1 = 1;
   a = avec(ptr0);
 
-  while tvec(ptr1) <= 35
+  while tvec(ptr0) < 20
     
-    if avec(ptr1) ~= a
-      clr = [a==1 0 a==2];
-      plot3(xvec(1, floor(linspace(ptr0, ptr1, 100))), ...
-          xvec(2, floor(linspace(ptr0, ptr1, 100))), ...
-          xvec(3, floor(linspace(ptr0, ptr1, 100))), ...
-          'color', clr)
+    if ptr1 == length(tvec) || avec(ptr1) ~= a
+      plot3(xvec(1, floor(linspace(ptr0, ptr1, 50))), ...
+          xvec(2, floor(linspace(ptr0, ptr1, 50))), ...
+          xvec(3, floor(linspace(ptr0, ptr1, 50))), ...
+          'color', [a==1 0 a==2])
       ptr0 = ptr1;
       a = avec(ptr0);
     else
@@ -53,12 +52,12 @@ matlab2tikz('radiant_data/radiant_3d.tex','interpretTickLabelsAsTex',true, ...
  'width','\figurewidth', 'height', '\figureheight', ...
  'parseStrings',false, 'showInfo', false)
 
-xvec = xvec_list{3};
-avec = avec_list{3};
+xvec = xvec_list{15};
+avec = avec_list{15};
 
 figure(2)
 clf; hold on
-ylim([20, 28])
+ylim([20, 27])
 
 plotidx = 1:floor(length(tvec)/500):length(tvec);
 plot(tvec(plotidx), xvec(1, plotidx), 'color', 'green', 'linewidth', 1.25)
