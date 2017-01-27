@@ -3,7 +3,7 @@ function [trans_fun, trans_out_fun, transient_fun] = get_fcns(fx)
 
   if strcmp(class(fx{1}), 'sdpvar')
     dyn_type = 'polynomial';
-    disturbance = length(fx) == 2;
+    disturbance = length(fx) == 3;
   else
     dyn_type = 'linear';
   end
@@ -17,4 +17,6 @@ function [trans_fun, trans_out_fun, transient_fun] = get_fcns(fx)
     trans_fun = @(p1, p2) isTransNLin(p1, p2, fx, 2);
     trans_out_fun = @(p1, dom) isTransOutNLin(p1, dom, fx, 2);
     transient_fun = @(p1) isTransientNLin(p1, fx, 4);
+  else
+    error('unknown dynamics')
   end

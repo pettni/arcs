@@ -36,15 +36,9 @@ function add_mode(part, fx)
   end
 
   % Figure out progress groups
-  if transient_fun(part.domain)
+  % Todo: better algos
+  if ~part.ts.b_disable_pg && transient_fun(part.domain)
     % Whole domain progress groups
-    part.ts.add_progress_group([act_n], 1:length(part))
-  else
-    % Individual state progress group
-    for i = 1:length(part)
-      if transient_fun(part.cell_list(i))
-        part.ts.add_progress_group([act_n], [i])
-      end
-    end
+    part.ts.add_progress_group([act_n], 1:length(part));
   end
 end

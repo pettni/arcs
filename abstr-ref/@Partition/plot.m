@@ -16,18 +16,30 @@ function plot(part, alpha, text)
   hold on;
 
   aps = part.get_all_aps;
-  colors = jet(length(aps)+1);
+  colors = prism(length(aps));
   h_list = [];
   legend_list = {};
 
+  recs_noap = part.get_cells_with_ap([]);
+  if ~isempty(recs_noap)
+    h = plot(part.cell_list(recs_noap), [0.5 0.5 0.5], alpha, 0);
+  end
+
+  % Sort aps by number of cells to plot "smallest" aps on top
+  count_list = zeros(1,length(aps));
   for i=1:length(aps)
+    count_list(i) = length(part.get_cells_with_ap(aps{i}));
+  end
+
+  [~, I] = sort(count_list, 2, 'descend');
+
+  for i=I
     aplist = part.get_cells_with_ap(aps{i});
     h = plot(part.cell_list(aplist), colors(i,:), alpha, 0);
     h_list = [h_list h];
     legend_list{end+1} = [aps{i}];
   end
 
-  h = plot(part.cell_list(part.get_cells_with_ap([])), colors(end,:), alpha, 0);
 
   if text
     for i = 1:length(part)

@@ -6,6 +6,8 @@ function result = isTransientNLin(rec1, act, deg)
 % N.O., Feb, 2016, nonlinear version
 % Michigan
 
+global ops;
+
 fx = act{1};
 vars = act{2};
 
@@ -26,14 +28,12 @@ for i =1:length(vars)
     [sm2 sc2] = polynomial(vars,deg-1,0);
     sos_mult = [sos_mult;sm1;sm2];
     msos_coefs = [msos_coefs; sc1;sc2;];
-    F = [F; sos(sm1);sos(sm2)];
+    F = [F; sos(sm1); sos(sm2)];
 end
 
-global ops;
+F = [F; sos(sos_mult'*polys - jacobian(Bx,vars)*fx - epsilon)];
 
-F = [sos(sos_mult'*polys - jacobian(Bx,vars)*fx - epsilon);F];
-
-diagnostics = solvesos(F, [], ops, [coefs;msos_coefs]);
+diagnostics = solvesos(F, [], ops, [coefs; msos_coefs]);
 if diagnostics.problem ~= 0 %0 feas, 1 infeas, other something else
     result = 0;
 else

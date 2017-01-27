@@ -6,7 +6,7 @@ function [W, K] = pginv(ts, U, G, Z, B, quant1)
   %  
   % Returns a sorted set
 
-  if strcmp(quant1, 'forall') && ~isempty(setdiff(1:ts.n_a, U))
+  if ts.b_disable_pg || (strcmp(quant1, 'forall') && ~isempty(setdiff(1:ts.n_a, U)))
     W = [];
     K = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
     return

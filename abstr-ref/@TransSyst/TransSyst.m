@@ -17,9 +17,14 @@ classdef TransSyst<handle
     fast_post = {};
     fast_pre_all = {};
     fast_enabled = false;
+  end
+
+  properties
+    % Disable progress groups
+    b_disable_pg = false;
 
     % Debugging flag
-    b_debug = false
+    b_debug = false;
   end
 
   methods

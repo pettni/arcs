@@ -97,6 +97,11 @@ classdef Rec<handle
 
     function vol = volume(rec)
       % Computes volume
+      if isempty(rec)
+        vol = 0;
+        return
+      end
+
       if length(rec)>1
         vol = zeros(1,length(rec));
         for i = 1:length(rec)
@@ -104,6 +109,7 @@ classdef Rec<handle
         end
         return;
       end
+
       vol = prod(rec.xmax-rec.xmin);
     end
 
