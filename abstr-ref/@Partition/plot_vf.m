@@ -17,8 +17,12 @@ function plot_vf(part, controller)
   for a = 1:length(part.act_list)
     fx = part.act_list{a}{1};
     xvar = part.act_list{a}{2};
-    dvar = part.act_list{a}{3};
-    drec = part.act_list{a}{4};
+    if length(part.act_list{a}) > 2
+      dvar = part.act_list{a}{3};
+      drec = part.act_list{a}{4};
+    else
+      drec = Rec([0; 0]);
+    end
 
     fx1 = strrep(strrep(sdisplay(fx(1)), '*', '.*'), '^', '.^');
     fx2 = strrep(strrep(sdisplay(fx(2)), '*', '.*'), '^', '.^');
@@ -49,8 +53,11 @@ function plot_vf(part, controller)
       a_list = 1:part.ts.n_a;
     end
     for a=a_list
+      if i==1
+        part.ts.post(i, a)
+      end
       for j=part.ts.post(i, a)
-        if i ~= j && j <= length(part)-1  % ignore outside state
+        if i ~= j && j <= length(part)  % ignore outside state
           [xc1 xc2] = get_best_vector(part.cell_list(i), ...
                                       part.cell_list(j), ...
                                       double(a));

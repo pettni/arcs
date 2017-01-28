@@ -1,19 +1,29 @@
-clear all;
+clear all; clf
 yalmip clear;
 
 global ops
 ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
 
 domain = Rec([-2 -1.5; 2 3]);
-goal_set = Rec([-1 0.5; -0.2 1.8], {'goal'});
-unsafe_set = Rec([-2 -1.5; -.5 -1], {'unsafe'});
+goal_set1 = Rec([1 1.5; 1.5 2.5], {'goal1'});
+goal_set2 = Rec([-1.5 -1; -1 -0.5], {'goal2'});
+unsafe_set = Rec([-0.5 0; 0.5 1], {'unsafe'});
+
+d_rec = Rec([0; 0]);
 
 maxiter = 80;
 show_plot = 1;
 use_pgs = 1;
 
-% Disturbance bound
-d_rec = Rec([0; 0]);
+% Build initial partition
+part = Partition(domain);
+part.add_area(goal_set1);
+part.add_area(goal_set2);
+part.add_area(unsafe_set)
+part.check();   % sanity check
+
+plot(part)
+drawnow
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -29,19 +39,9 @@ fx3 = [-x2-0.5*x1^3-1.5*x1+2;...
 fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
     -10+x1+d1];
 
-% Build initial partition
-part = Partition(domain);
-part.add_area(goal_set);
-part.add_area(unsafe_set)
-part.check();   % sanity check
-
 % Create transition system
 part.create_ts();
-
-% Disable progress groups
-if ~use_pgs
-  part.ts.b_disable_pg = true;
-end
+part.ts.b_disable_pg = false;
 
 % Add modes
 part.add_mode({fx1, [x1; x2], [d1], d_rec});
@@ -57,9 +57,12 @@ while true
 
   U = part.get_cells_with_ap({'unsafe'});
   A = setdiff(1:length(part), U);
-  B = part.get_cells_with_ap({'goal'});
+  B = part.get_cells_with_ap({'goal1'});
+  % C_list = {part.get_cells_with_ap({'goal1'}), ...
+            % part.get_cells_with_ap({'goal2'})};
+  C_list = [];
 
-  [Win, Cwin] = part.ts.win_primal(A, B, [], 'exists', Win);
+  [Win, Cwin] = part.ts.win_primal(A, B, C_list, 'exists');
   part.add_aps(Win, {'win'});
 
   Cwin = setdiff(Cwin, union(Win, U));
@@ -84,4 +87,11 @@ while true
   iter = iter + 1;
 end
 
-[Win, Cwin, Vlist, Klist] = part.ts.win_primal(A, B, [], 'exists', Win);
+U = part.get_cells_with_ap({'unsafe'});
+A = setdiff(1:length(part), U);
+B = part.get_cells_with_ap({'goal1'});
+% C_list = {part.get_cells_with_ap({'goal1'}), ...
+          % part.get_cells_with_ap({'goal2'})};
+
+[Win, ~, Vlist, Klist] = part.ts.win_primal(A, B, C_list, 'exists');
+

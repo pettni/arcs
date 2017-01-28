@@ -76,8 +76,10 @@ while true
   end
 
   % Split largest cell in candidate set
-  [~, C_index] = max(volume(part(Cwin)));
+  [~, C_index] = max(volume(part.cell_list(Cwin)));
   part.split_cell(Cwin(C_index));
 
   iter = iter + 1;
 end
+
+[Win, Cwin, Vlist, Klist] = part.ts.win_primal(A, B, [], 'exists', Win);
