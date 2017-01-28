@@ -28,30 +28,31 @@ function [ret, K] = pre(ts, X, U, quant1, quant2)
     if ~log_idx(q)
         continue
     end
-    act_list = zeros(1, ts.n_a);   % outcome per action 
-    for a = 1:ts.n_a
-        if ts.fast_enabled
-          aPost = ts.fast_post{(a-1) * ts.n_s + q};
-        else
-          aPost = ts.post(q, a);
-        end
-        if strcmp(quant2, 'exists')
-          act_list(a) = any(builtin('_ismemberhelper',aPost, X));
-        else
-          act_list(a) = all(builtin('_ismemberhelper',aPost, X)) && ~isempty(aPost);
-        end
+    act_list = zeros(1, length(U));   % outcome per action 
+    for i = 1:length(U)
+      a = U(i);
+      if ts.fast_enabled
+        aPost = ts.fast_post{(a-1) * ts.n_s + q};
+      else
+        aPost = ts.post(q, a);
+      end
+      if strcmp(quant2, 'exists')
+        act_list(a) = any(builtin('_ismemberhelper',aPost, X));
+      else
+        act_list(a) = all(builtin('_ismemberhelper',aPost, X)) && ~isempty(aPost);
+      end
     end
     if strcmp(quant1, 'exists')
       if ~any(act_list)
         log_idx(q) = 0;
       elseif nargout > 1
-        K(q) = find(act_list); 
+        K(q) = U(act_list); 
       end
     else
       if ~all(act_list)
         log_idx(q) = 0;
       elseif nargout > 1
-        K(q) = 1:ts.n_a;
+        K(q) = U;
       end
     end
   end
