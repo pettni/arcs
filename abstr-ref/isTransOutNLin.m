@@ -1,4 +1,4 @@
-function ret = isTransOutNLin(rec, dom, act, deg)
+function ret = isTransOutNLin(rec, dom, dyn, deg)
 	% Assuming that rec \subset dom, see if there is a transition from
 	% rec to the outside of dom.
 	dim = rec.dim;
@@ -6,7 +6,7 @@ function ret = isTransOutNLin(rec, dom, act, deg)
   ret = false;
   for part=rest
   	if intersects(rec, part)
-      if isTransNLin(rec, part, act, deg)
+      if isTransNLin(rec, part, dyn, deg)
           ret = true;
           return;
       end
