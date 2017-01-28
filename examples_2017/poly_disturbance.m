@@ -5,31 +5,35 @@ global ops
 ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
 
 domain = Rec([-2 -1.5; 2 3]);
-goal_set = Rec([-1 0.5; -0.2 1.8], {'goal'});
-unsafe_set = Rec([-2 -1.5; -.5 -1], {'unsafe'});
+goal_set1 = Rec([0.5 1; 1.5 2], {'goal1'});
+goal_set2 = Rec([-1.5 -1.5; -1 -1], {'goal2'});
+unsafe_set = Rec([-0.5 0; 0.5 1], {'unsafe'});
 
 maxiter = 80;
 show_plot = 1;
-use_pgs = 0;
+use_pgs = 1;
+
+% Disturbance bound
+d_rec = Rec([-5; 5]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-sdpvar x1 x2
-vars = [x1; x2];
+sdpvar x1 x2 d1
 
 %Moore Greitzer
 fx1 = [-x2-0.5*x1^3-1.5*x1;...
-       -x2^2+2+x1];
+    -x2^2+2+x1+d1];
 fx2 = [-x2-0.5*x1^3-1.5*x1;...
-       -x2+x1];
+    -x2+x1+d1];
 fx3 = [-x2-0.5*x1^3-1.5*x1+2;...
-       10+x1];
+    10+x1+d1];
 fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
-       -10+x1];
+    -10+x1+d1];
 
 % Build initial partition
 part = Partition(domain);
-part.add_area(goal_set);
+part.add_area(goal_set1);
+part.add_area(goal_set2);
 part.add_area(unsafe_set)
 part.check();   % sanity check
 
@@ -42,10 +46,10 @@ if ~use_pgs
 end
 
 % Add modes
-part.add_mode({fx1, vars});
-part.add_mode({fx2, vars});
-part.add_mode({fx3, vars});
-part.add_mode({fx4, vars});
+part.add_mode({fx1, [x1; x2], [d1], d_rec});
+part.add_mode({fx2, [x1; x2], [d1], d_rec});
+part.add_mode({fx3, [x1; x2], [d1], d_rec});
+part.add_mode({fx4, [x1; x2], [d1], d_rec});
 
 Win = [];
 iter = 0;
