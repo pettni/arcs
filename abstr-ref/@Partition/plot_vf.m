@@ -40,9 +40,13 @@ function plot_vf(part, controller)
 
   for i=1:length(part)
     if nargin == 2
-      a_list = controller(i);
+      if controller.isKey(i)
+        a_list = controller(i);
+      else
+        a_list = [];
+      end
     else
-      a_list = 1:part.ts.n_a
+      a_list = 1:part.ts.n_a;
     end
     for a=a_list
       for j=part.ts.post(i, a)

@@ -123,7 +123,7 @@ function [ind1, ind2] = split_cell(part, ind, dim)
       get_fcns(part.act_list{act_num});
 
     for i = [ind1, ind2]
-      for j = part.get_neighbors(i)
+      for j = setdiff(part.get_neighbors(i), ind2)
         if trans_fun(part.cell_list(i), part.cell_list(j))
           part.ts.add_transition(i, j, act_num);
         end
