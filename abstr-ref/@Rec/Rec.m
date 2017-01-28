@@ -166,7 +166,7 @@ classdef Rec<handle
     end
 
     function ret = contains_strictly(rec1, rec2)
-      % Return true if rec2 does not touch the boundaries of rec1 along dimension dim
+      % Return true if rec2 does not touch the boundaries of rec1
       ret = all(rec1.xmax < rec2.xmax) && all(rec1.xmin>rec2.xmin);
     end
   end

@@ -1,12 +1,12 @@
-function plot(part, alpha, text)
-  % Plot a partition, regions with the same AP are plotted
+function plot(part, alpha, add_numbers)
+  % Plot a 2d partition, regions with the same AP are plotted
   % in the same color.
 
   if nargin<2
     alpha = 1;
   end
   if nargin<3
-    text = 0;
+    add_numbers = 0;
   end
 
   hh = ishold; 
@@ -39,9 +39,9 @@ function plot(part, alpha, text)
     h_list = [h_list h];
     legend_list{end+1} = [aps{i}];
   end
+  legend(h_list,legend_list)
 
-
-  if text
+  if add_numbers
     for i = 1:length(part)
       xc = part.cell_list(i).getMidpoint();
       if part.dim == 2
@@ -52,6 +52,6 @@ function plot(part, alpha, text)
       end
     end
   end 
-  legend(h_list,legend_list)
+  
   if (~hh) hold off; end
 end

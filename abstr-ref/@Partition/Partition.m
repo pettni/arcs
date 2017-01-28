@@ -51,8 +51,7 @@ classdef Partition<handle
             adjacency(j,i) = d;
           end
         end
-        isi = contains_strictly(part.cell_list(i), part.domain);
-        if ~isi
+        if ~contains_strictly(part.cell_list(i), part.domain)
           adjacency_outside(i) = 1;
         end
       end
