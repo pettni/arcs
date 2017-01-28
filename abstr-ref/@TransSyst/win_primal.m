@@ -53,8 +53,15 @@ function [V, CV, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
   end
 
   % Candidate set
-  % Todo: Add third part!
-  CV = union(setdiff(ts.pre(V, 1:ts.n_a, quant1, 'exists'), V), ...
-        setdiff(B, ts.win_always(intersect(A, B), quant1)));
+  CV = setdiff(ts.pre(V, 1:ts.n_a, quant1, 'exists'), V);
+
+  CV = union(CV, setdiff(intersect(A, B), ts.win_always(intersect(A, B), quant1)));
+
+  % for i=1:length(C_list)
+  %   W1j = ts.win_until(B, intersect(B, C_list{i}), quant1);
+  %   CV = union(CV, W1j);
+  % end
+
+  % CV = union(CV, setdiff(A, ts.win_always(A, quant1)));
 
 end
