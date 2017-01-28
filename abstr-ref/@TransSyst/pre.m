@@ -28,7 +28,7 @@ function [ret, K] = pre(ts, X, U, quant1, quant2)
     if ~log_idx(q)
         continue
     end
-    act_list = zeros(1, length(U));   % outcome per action 
+    act_list = false(1, length(U));   % outcome per action 
     for i = 1:length(U)
       a = U(i);
       if ts.fast_enabled
@@ -37,9 +37,9 @@ function [ret, K] = pre(ts, X, U, quant1, quant2)
         aPost = ts.post(q, a);
       end
       if strcmp(quant2, 'exists')
-        act_list(a) = any(builtin('_ismemberhelper',aPost, X));
+        act_list(i) = any(builtin('_ismemberhelper',aPost, X));
       else
-        act_list(a) = all(builtin('_ismemberhelper',aPost, X)) && ~isempty(aPost);
+        act_list(i) = all(builtin('_ismemberhelper',aPost, X)) && ~isempty(aPost);
       end
     end
     if strcmp(quant1, 'exists')
