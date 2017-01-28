@@ -86,7 +86,14 @@ classdef Rec<handle
     end
 
     function ret = isEmptySet(rec)
-      % Returns true if Rec` is the empty set
+      % Returns true if Rec is the empty set
+      if length(rec) > 1
+        ret = false(1,length(rec));
+        for i=1:length(rec)
+          ret(i) = isEmptySet(rec(i));
+        end
+        return
+      end 
       ret = any(rec.xmin>rec.xmax);
     end
 
@@ -115,6 +122,10 @@ classdef Rec<handle
 
     function [part1, part2] = split(rec, dim)
       % Split the Rec along dimension dim
+      % if not given, choose maximal
+      if nargin<2
+        [~, dim] = max(rec.xmax - rec.xmin);
+      end
       xmin = rec.xmin;
       xmax = rec.xmax;
       midval = (xmax(dim) + xmin(dim))/2;

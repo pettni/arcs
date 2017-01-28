@@ -8,6 +8,8 @@ classdef Partition<handle
     adjacency_outside; % Which cells are at the boundary of the domain?
     ts;       % associated transition system
     act_list  % list of added modes
+    trans_reg_U; % list of transient regions
+    trans_reg_rec;
   end
 
   methods
@@ -18,6 +20,8 @@ classdef Partition<handle
       r.cell_list = [domain];
       r.adjacency = [];
       r.act_list = {};
+      r.trans_reg_U = {};
+      r.trans_reg_rec = {};
     end
 
     function add_area(part, area)
@@ -25,6 +29,22 @@ classdef Partition<handle
       % is subtracted from existing cells, so existing AP's
       % may not be preserved.
       part.cell_list = [mldivide(part.cell_list, area) area];
+    end
+
+    function ret = has_superior_trans_reg(part, U, rec)
+      ret = false;
+      for i=1:length(part.trans_reg_rec)
+        if all(ismember(U, part.trans_reg_U{i})) && ...
+           part.trans_reg_rec{i}.contains(rec)
+           ret = true;
+           return
+        end
+      end
+    end
+
+    function intersect_area(part, area)
+      % Intersects all cells with area, increases the number of cells
+      part.cell_list = [mldivide(part.cell_list, area) intersect(part.cell_list, area)];
     end
 
     function ret = find_cell(part, point)
@@ -115,6 +135,16 @@ classdef Partition<handle
           if all(ismember(ap, part.cell_list(i).ap))
             ret(end+1) = i;
           end
+        end
+      end
+    end
+
+    function ret = get_cells_inside(part, rec)
+      % Return the index of all cells that are within rec
+      ret = [];
+      for i=1:length(part)
+        if rec.contains(part.cell_list(i))
+          ret(end+1) = i;
         end
       end
     end

@@ -37,8 +37,8 @@ function add_mode(part, fx)
 
   % Figure out progress groups
   % Todo: better algos
-  if ~part.ts.b_disable_pg && transient_fun(part.domain)
-    % Whole domain progress groups
-    part.ts.add_progress_group([act_n], 1:length(part));
-  end
+  % if ~part.ts.b_disable_pg && transient_fun(part.domain)
+  %   % Whole domain progress groups
+  %   part.ts.add_progress_group([act_n], 1:length(part));
+  % end
 end

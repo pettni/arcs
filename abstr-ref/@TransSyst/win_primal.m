@@ -30,9 +30,7 @@ function [V, CV, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
 
   while true
     Z = ts.pre(V, 1:ts.n_a, quant1, 'forall');
-    for i=1:length(ts.pg_U)
-      Z = union(Z, ts.pginv(ts.pg_U{i}, ts.pg_G{i}, V, A, quant1));
-    end
+    Z = union(Z, ts.pre_pg(V, A, quant1));
 
     if nargout > 2
       [Vt, Kt] = ts.win_intermediate(A, B, Z, C_list, quant1);

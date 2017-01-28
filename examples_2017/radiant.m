@@ -4,10 +4,12 @@ split_inv = true;   % to avoid zeno
 
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
 
-[a1 k1 e1 a2 k2 e2] = radiant_dyn();
+cd radiant_data
+  [a1 k1 e1 a2 k2 e2] = radiant_dyn();
+cd ..
 
 % Disturbance: unit is W/m^2 --- heat added per unit floor area
-dmax = 3;
+dmax = 0;
 d_rec = Rec([-dmax -dmax; dmax dmax]);
 
 act_set = {{a1, k1, e1, d_rec}, {a2, k2, e2, d_rec}};
@@ -46,14 +48,14 @@ while true
                                    [], 'exists', Win);
 
   % No need to split inside winning set
-  Cwin = setdiff(Cwin, Win);
+  Cwin = setdiff(Cwin, union(Win, length(part)+1));
 
   if isempty(Cwin) || iter == maxiter
     break
   end
 
   % Split largest cell in candidate set
-  [~, C_index] = max(volume(part(Cwin)));
+  [~, C_index] = max(volume(part.cell_list(Cwin)));
   [ind1, ind2] = part.split_cell(Cwin(C_index));
 
   % If we happened to split winning set, update it

@@ -70,16 +70,16 @@ function handle = plot(rec, color, alpha, multiple)
 
   if rec.dim==1
     h = line([rec.xmin rec.xmax], [0 0]);
-    set(h, 'Color', color)
+    set(h, 'Color', color);
   elseif rec.dim==2
-      vert = rec.getVertices;
     if rec.isFullDim
+      vert = rec.getVertices;
       h = fill(vert(:,1), vert(:,2), 'r');
-      set(h, 'FaceColor', color)
-      set(h, 'FaceAlpha', alpha)
+      set(h, 'FaceColor', color);
+      set(h, 'FaceAlpha', alpha);
     else
       h = line(vert(:,1), vert(:,2), 'r');
-      set(h, 'Color', color)
+      set(h, 'Color', color);
     end
   elseif rec.dim==3
     n_fulldim = length(rec.getFullDims);

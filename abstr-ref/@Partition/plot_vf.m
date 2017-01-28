@@ -52,12 +52,9 @@ function plot_vf(part, controller)
     else
       a_list = 1:part.ts.n_a;
     end
-    for a=a_list
-      if i==1
-        part.ts.post(i, a)
-      end
+    for a=a_list 
       for j=part.ts.post(i, a)
-        if i ~= j && j <= length(part)  % ignore outside state
+        if (i ~= j) && (j <= length(part))  % ignore outside state
           [xc1 xc2] = get_best_vector(part.cell_list(i), ...
                                       part.cell_list(j), ...
                                       double(a));

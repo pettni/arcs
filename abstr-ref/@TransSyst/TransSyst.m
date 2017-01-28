@@ -79,12 +79,34 @@ classdef TransSyst<handle
       ts.fast_enabled = false;
     end
 
+    function ret = has_superior_pg(ts, U, G)
+      % Return true if a superior progress group
+      % is already present
+      ret = false;
+      for i=1:length(ts.pg_U)
+        if all(ismember(U, ts.pg_U{i})) && ...
+           all(ismember(G, ts.pg_G{i}))
+           ret = true;
+           return
+         end
+       end
+    end
+
     function add_progress_group(ts, U, G)
       % Add progress group G under modes U
 
       if ts.b_debug
         assert(all(1 <= U) && all(U <= ts.n_a))
         assert(all(1 <= G) && all(G <= ts.n_s))
+      end
+
+      % Remove any pgs that are inferior
+      for i=length(ts.pg_U):-1:1
+        if all(ismember(ts.pg_U{i}, U)) && ...
+           all(ismember(ts.pg_G{i}, G))
+          ts.pg_U(i) = [];
+          ts.pg_G(i) = [];
+        end
       end
 
       ts.pg_U{end+1} = U;

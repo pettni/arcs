@@ -4,8 +4,8 @@ function irec = intersect(rec1, rec2)
   if length(rec1)>1
     irec = [];
     for rec = rec1
-      isect = intersect(rec, rec2)
-      if ~isect.isEmptySet
+      isect = intersect(rec, rec2);
+      if isect.isFullDim
         irec = [irec isect];
       end
     end
@@ -16,12 +16,7 @@ function irec = intersect(rec1, rec2)
     return;
   end
 
-  imin = max(rec1.xmin, rec2.xmin);
-  imax = min(rec1.xmax, rec2.xmax);
-
-  % if ~isempty(setxor(rec1.ap, rec2.ap)) && (~isempty(rec1.ap) || ~isempty(rec2.ap))
-  %   warning('intersecting sets with different APs. Keeping both..')
-  % end
-  ap = union(rec1.ap, rec2.ap);
-  irec = Rec([imin; imax], ap);
+  irec = Rec([max(rec1.xmin, rec2.xmin); ...
+              min(rec1.xmax, rec2.xmax)], ...
+              union(rec1.ap, rec2.ap));
 end

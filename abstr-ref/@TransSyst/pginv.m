@@ -6,13 +6,15 @@ function [W, K] = pginv(ts, U, G, Z, B, quant1)
   %  
   % Returns a sorted set
 
-  if ts.b_disable_pg || (strcmp(quant1, 'forall') && ~isempty(setdiff(1:ts.n_a, U)))
+  W = setdiff(intersect(uint32(G), uint32(B)), uint32(Z));
+
+  if ts.b_disable_pg || ...  % pgs disabled
+     (strcmp(quant1, 'forall') && ~isempty(setdiff(1:ts.n_a, U))) || ... % uncontrolled actions
+     isempty(intersect(ts.pre(Z, U, quant1, 'exists'), W))  % no reach to Z
     W = [];
     K = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
     return
   end
-
-  W = setdiff(intersect(uint32(G), uint32(B)), uint32(Z));
 
   while true
     if nargout > 1

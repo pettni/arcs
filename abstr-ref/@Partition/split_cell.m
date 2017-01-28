@@ -122,28 +122,54 @@ function [ind1, ind2] = split_cell(part, ind, dim)
     [trans_fun, trans_out_fun, transient_fun] = ...
       get_fcns(part.act_list{act_num});
 
-    for i = [ind1, ind2]
-      for j = setdiff(part.get_neighbors(i), ind2)
-        if trans_fun(part.cell_list(i), part.cell_list(j))
-          part.ts.add_transition(i, j, act_num);
-        end
-        if trans_fun(part.cell_list(j), part.cell_list(i))
-          part.ts.add_transition(j, i, act_num);
-        end
+    for j = part.get_neighbors(ind1)
+      if trans_fun(part.cell_list(ind1), part.cell_list(j))
+        part.ts.add_transition(ind1, j, act_num);
       end
+      if trans_fun(part.cell_list(j), part.cell_list(ind1))
+        part.ts.add_transition(j, ind1, act_num);
+      end
+    end
 
-      % Out-of-domain
-      if trans_out_fun(part.cell_list(i), part.domain)
-        part.ts.add_transition(i, N+2, act_num);
+    for j = part.get_neighbors(ind2)
+      if i==j
+        continue
       end
+      if trans_fun(part.cell_list(ind2), part.cell_list(j))
+        part.ts.add_transition(ind2, j, act_num);
+      end
+      if trans_fun(part.cell_list(j), part.cell_list(ind2))
+        part.ts.add_transition(j, ind2, act_num);
+      end
+    end
 
-      % Self transitions
-      if ~transient_fun(part.cell_list(i))
-        part.ts.add_transition(i, i, act_num);
-      end
+    % Out-of-domain
+    if trans_out_fun(part.cell_list(ind1), part.domain)
+      part.ts.add_transition(ind1, N+2, act_num);
+    end
+    if trans_out_fun(part.cell_list(ind2), part.domain)
+      part.ts.add_transition(ind2, N+2, act_num);
+    end
+
+    % Self transitions
+    if ~transient_fun(part.cell_list(ind1))
+      part.ts.add_transition(ind1, ind1, act_num);
+    end
+    if ~transient_fun(part.cell_list(ind2))
+      part.ts.add_transition(ind2, ind2, act_num);
     end
   end
 
-  % TODO: check for new progress groups
+  % Check for new progress groups in transient regions
+  for i=1:length(part.trans_reg_U)
+    if (part.trans_reg_rec{i}.contains(part.cell_list(ind1)) || ...
+        part.trans_reg_rec{i}.contains(part.cell_list(ind2)))
+      G_cand = part.get_cells_inside(part.trans_reg_rec{i});
+      U_cand = part.trans_reg_U{i};
+      if ~part.ts.has_superior_pg(U_cand, G_cand)
+        part.ts.add_progress_group(U_cand, G_cand);
+      end
+    end
+  end
 
 end

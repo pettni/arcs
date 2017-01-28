@@ -10,23 +10,15 @@ function [V, K] = win_until(ts, B, P, quant1)
   while true
     if nargout > 1
       [preV, preK] = ts.pre(V, 1:ts.n_a, quant1, 'forall');
-      K = [preK; K];   % order important, K takes priority!
+      [preVinv, preKinv] = ts.pre_pg(V, B, quant1);
+      K = [preKinv; preK; K];   % order important, K takes priority!
     else
       preV = ts.pre(V, 1:ts.n_a, quant1, 'forall');
+      preVinv = ts.pre_pg(V, B, quant1);
     end
-    Vt = union(P, intersect(B, preV));
+    Vt = union(union(P, intersect(B, preV)), preVinv);
     Vt = reshape(Vt, 1, length(Vt));
-    for i=1:length(ts.pg_U)
-      % Progress groups
-      if nargout > 1
-        [preVinv, preKinv] = ts.pginv(ts.pg_U{i}, ts.pg_G{i}, V, B, quant1);
-        K = [preKinv; K];   % order important, K takes priority!
-      else
-        preVinv = ts.pginv(ts.pg_U{i}, ts.pg_G{i}, V, B, quant1);
-      end
-      Vt = union(Vt, preVinv);
-      Vt = reshape(Vt, 1, length(Vt));
-    end
+
     if length(V) == length(Vt)
       break
     end

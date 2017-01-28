@@ -10,7 +10,7 @@ unsafe_set = Rec([-2 -1.5; -.5 -1], {'unsafe'});
 
 maxiter = 80;
 show_plot = 1;
-use_pgs = 0;
+use_pgs = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -66,7 +66,7 @@ while true
   disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ', winning set volume ', num2str(sum(volume(part(Win)))/volume(part.domain))])
 
   if show_plot
-    part.plot();
+    part.plot_vf();
     drawnow;
   end
 
@@ -82,4 +82,4 @@ while true
   iter = iter + 1;
 end
 
-[Win, Cwin, Vlist, Klist] = part.ts.win_primal(A, B, [], 'exists', Win);
+[Win, Cwin, Vlist, Klist] = part.ts.win_primal(A, B, [], 'exists');
