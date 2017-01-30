@@ -16,7 +16,7 @@ function test_invariance(testCase)
 
     verifyEqual(testCase, cont1(2), uint32(1));
 
-    [~, cont2] = ts.win_always([1, 2], 'exists');
+    [~, ~, cont2] = ts.win_always([1, 2], 'exists');
 
     verifyEqual(testCase, cont2(1), uint32(1));
     verifyEqual(testCase, cont2(2), uint32(1));
@@ -68,11 +68,11 @@ function test_pginv(testCase)
 
     ts.add_progress_group([1, 2], [3, 4]);
 
-    [~, cont1] = ts.pre_pg([1, 2], 1:4, 'exists');
+    [~, ~, cont1] = ts.pre_pg([1, 2], 1:4, 'exists');
     verifyEqual(testCase, cont1(3), 1);
     verifyEqual(testCase, cont1(4), 1);
 
-    [V, ~, cont2] = ts.win_primal([], [1, 2], [], 'exists');
+    [~, ~, cont2] = ts.win_primal([], [1, 2], [], 'exists');
 
     for i=1:8
         verifyEqual(testCase, cont2(3), uint32(1));
