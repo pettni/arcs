@@ -88,14 +88,38 @@ function [ind1, ind2] = split_cell(part, ind, dim)
     return
   end
 
+  % Store transitions pertaining to split state
+  % to reduce computation
+  trans_in = [];
+  trans_in_act = [];
+  trans_out = [];
+  trans_out_act = [];
+  outdomain_act = [];
+  non_transient_act = [];
+
   % remove all transitions pertaining to ind1
   for i=part.ts.num_trans():-1:1
+    if part.ts.state1(i) == ind1 && part.ts.state2(i) == ind2 + 1
+      outdomain_act(end+1) = part.ts.action(i);
+    elseif part.ts.state1(i) == ind1 && part.ts.state2(i) == ind1
+      non_transient_act(end+1) = part.ts.action(i);
+    elseif part.ts.state1(i) == ind1 
+      trans_out(end+1) = part.ts.state2(i);
+      trans_out_act(end+1) = part.ts.action(i);
+    elseif part.ts.state2(i) == ind1 
+      trans_in(end+1) = part.ts.state1(i);
+      trans_in_act(end+1) = part.ts.action(i);
+    end
     if part.ts.state1(i) == ind1 || part.ts.state2(i) == ind1
       part.ts.state1(i) = [];
       part.ts.state2(i) = [];
       part.ts.action(i) = [];
     end
   end
+  trans_in
+  trans_out
+  outdomain_act
+  non_transient_act
 
   % move last (outside) state forward---should only have 
   % outgoing transitions
@@ -105,58 +129,98 @@ function [ind1, ind2] = split_cell(part, ind, dim)
     end
   end
 
-  % update progress groups
-  for i = 1:length(part.ts.pg_G)
-    if ismember(ind1, part.ts.pg_G{i})
-      part.ts.pg_G{i} = union(part.ts.pg_G{i}, part.ts.n_s);
-    end
-  end
-
   % increase state counter
   part.ts.n_s = part.ts.n_s + 1;
   part.ts.fast_enabled = false;
 
-  % Re-establish transitions
+  % Transitions into union
+  for i = 1:length(trans_in)
+    in_state = trans_in(i);
+    in_act = trans_in_act(i);
+    trans_fun = get_fcns(part.act_list{in_act});
+    if trans_fun(part.cell_list(in_state), part.cell_list(ind1))
+      part.ts.add_transition(in_state, ind1, in_act);
+    end
+    if trans_fun(part.cell_list(in_state), part.cell_list(ind2))
+      part.ts.add_transition(in_state, ind2, in_act);
+    end
+  end
+
+  % Transitions out of union
+  for i = 1:length(trans_out)
+    out_state = trans_out(i);
+    out_act = trans_out_act(i);
+    trans_fun = get_fcns(part.act_list{out_act});
+    if trans_fun(part.cell_list(ind1), part.cell_list(out_state))
+      part.ts.add_transition(ind1, out_state, out_act);
+    end
+    if trans_fun(part.cell_list(ind2), part.cell_list(out_state))
+      part.ts.add_transition(ind2, out_state, out_act);
+    end
+  end
+
+  % Transitions between the cells
   for act_num = 1:length(part.act_list)
-
-    [trans_fun, trans_out_fun, transient_fun] = ...
-      get_fcns(part.act_list{act_num});
-
-    for j = part.get_neighbors(ind1)
-      if trans_fun(part.cell_list(ind1), part.cell_list(j))
-        part.ts.add_transition(ind1, j, act_num);
-      end
-      if trans_fun(part.cell_list(j), part.cell_list(ind1))
-        part.ts.add_transition(j, ind1, act_num);
-      end
+    trans_fun = get_fcns(part.act_list{act_num});
+    if trans_fun(part.cell_list(ind1), part.cell_list(ind2))
+      part.ts.add_transition(ind1, ind2, act_num);
     end
-
-    for j = part.get_neighbors(ind2)
-      if i==j
-        continue
-      end
-      if trans_fun(part.cell_list(ind2), part.cell_list(j))
-        part.ts.add_transition(ind2, j, act_num);
-      end
-      if trans_fun(part.cell_list(j), part.cell_list(ind2))
-        part.ts.add_transition(j, ind2, act_num);
-      end
+    if trans_fun(part.cell_list(ind2), part.cell_list(ind1))
+      part.ts.add_transition(ind2, ind1, act_num);
     end
+  end
 
-    % Out-of-domain
+    % % Re-establish transitions
+    % for act_num = 1:length(part.act_list)
+    %   [trans_fun, trans_out_fun, transient_fun] = ...
+    %     get_fcns(part.act_list{act_num});
+    % for j = part.get_neighbors(ind1)
+    %   if trans_fun(part.cell_list(ind1), part.cell_list(j))
+    %     part.ts.add_transition(ind1, j, act_num);
+    %   end
+    %   if trans_fun(part.cell_list(j), part.cell_list(ind1))
+    %     part.ts.add_transition(j, ind1, act_num);
+    %   end
+    % end
+
+    % for j = part.get_neighbors(ind2)
+    %   if i==j
+    %     continue
+    %   end
+    %   if trans_fun(part.cell_list(ind2), part.cell_list(j))
+    %     part.ts.add_transition(ind2, j, act_num);
+    %   end
+    %   if trans_fun(part.cell_list(j), part.cell_list(ind2))
+    %     part.ts.add_transition(j, ind2, act_num);
+    %   end
+    % end
+
+  % Out-of-domain
+  for i = 1:length(outdomain_act)
+    [~, trans_out_fun] = get_fcns(part.act_list{outdomain_act(i)});
     if trans_out_fun(part.cell_list(ind1), part.domain)
       part.ts.add_transition(ind1, N+2, act_num);
     end
     if trans_out_fun(part.cell_list(ind2), part.domain)
       part.ts.add_transition(ind2, N+2, act_num);
     end
+  end
 
-    % Self transitions
-    if ~transient_fun(part.cell_list(ind1))
+  % Self transitions
+  for i = 1:length(non_transient_act)
+    [~, ~, transient_fun] = get_fcns(part.act_list{non_transient_act(i)});
+    if ~transient_fun(part.cell_list(ind1), {part.act_list{non_transient_act(i)}})
       part.ts.add_transition(ind1, ind1, act_num);
     end
-    if ~transient_fun(part.cell_list(ind2))
+    if ~transient_fun(part.cell_list(ind2), {part.act_list{non_transient_act(i)}})
       part.ts.add_transition(ind2, ind2, act_num);
+    end
+  end
+
+  % update existing progress groups
+  for i = 1:length(part.ts.pg_G)
+    if ismember(ind1, part.ts.pg_G{i})
+      part.ts.pg_G{i} = union(part.ts.pg_G{i}, part.ts.n_s);
     end
   end
 

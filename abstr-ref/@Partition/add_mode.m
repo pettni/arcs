@@ -30,15 +30,9 @@ function add_mode(part, fx)
     end
 
     % Self transitions
-    if ~transient_fun(part.cell_list(i))
+    if ~transient_fun(part.cell_list(i), {fx})
       part.ts.add_transition(i, i, act_n);
     end
   end
 
-  % Figure out progress groups
-  % Todo: better algos
-  % if ~part.ts.b_disable_pg && transient_fun(part.domain)
-  %   % Whole domain progress groups
-  %   part.ts.add_progress_group([act_n], 1:length(part));
-  % end
 end

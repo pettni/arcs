@@ -42,6 +42,7 @@ function plot_vf(part, controller)
     end
   end
 
+  axis(axis);
   for i=1:length(part)
     if nargin == 2
       if controller.isKey(i)

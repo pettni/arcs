@@ -40,51 +40,21 @@ end
 
 dyn_list = {{fx1, vars}, {fx2, vars}, {fx3, vars}, {fx4, vars}};
 
-% Split some first to reveal progress groups
-granularity = 1;
-
-large_delta = (domain.xmax - domain.xmin)/granularity;
-small_delta = (domain.xmax - domain.xmin)/(2*granularity);
-
-for i = 1:2*granularity-1
-    splitx = Rec([-inf -inf; domain.xmin(1) + i*small_delta(1) inf]);
-    splity = Rec([-inf -inf; Inf domain.xmin(2) + i*small_delta(2)]);
-    part.intersect_area(splitx);
-    part.intersect_area(splity);
-end
-
 % Create transition system
 part.create_ts();
 
 % Add modes
 part.add_mode(dyn_list{1})
-part.add_mode(dyn_list{2});
-part.add_mode(dyn_list{3});
-part.add_mode(dyn_list{4});
+% part.add_mode(dyn_list{2});
+% part.add_mode(dyn_list{3});
+% part.add_mode(dyn_list{4});
 
-get_pg_rec(part, Rec([-2 -1.5; 2 0.5]), 1:4);
-part.ts.pg_U
-get_pg_rec(part, Rec([-2 0.5; 2 3]), 1:4);
-part.ts.pg_U
-
-get_pg_rec(part, Rec([-2 -1.5; 0 3]), 1:4);
-part.ts.pg_U
-get_pg_rec(part, Rec([0 -1.5; 2 3]), 1:4);
-part.ts.pg_U
-
-  % for id = 0:granularity
-  %   for jd = 0:granularity
-  %     search_xmin = domain.xmin + [id jd].*small_delta - [0.1 0.1];
-  %     search_xmax = search_xmin + large_delta + [0.1 0.1];
-  %     search_rec = Rec([search_xmin; search_xmax]);
-  %     get_pg_rec(part, search_rec, 1:4);
-  %   end
-  % end
+% Search for rec areas
+part.search_trans_reg(1);
 
 Win = [];
 iter = 0;
 tic
-
 while true
 
   U = part.get_cells_with_ap({'unsafe'});
@@ -99,14 +69,16 @@ while true
   time = toc;
   disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ', winning set volume ', num2str(sum(volume(part(Win)))/volume(part.domain))])
 
-  if show_plot
-    part.plot();
-    drawnow;
-  end
-
   if isempty(Cwin) || iter == maxiter
     % we are done
     break
+  end
+
+  if show_plot
+    clf; hold on
+    part.plot_vf();
+    % plot(part(Cwin), [0 0 1], 0.8, 0);
+    drawnow;
   end
 
   % Split largest cell in candidate set
@@ -116,4 +88,10 @@ while true
   iter = iter + 1;
 end
 
-[Win, Cwin, Vlist, Klist] = part.ts.win_primal(A, B, [], 'exists');
+  if show_plot
+    clf; hold on
+    part.plot();
+    drawnow;
+  end
+
+[~, ~, cont] = part.ts.win_primal(A, B, [], 'exists');

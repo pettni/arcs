@@ -6,6 +6,8 @@ function [] = search_trans_reg(part, search_depth)
   search_set_mindim = [1];
   search_set_numsplit = [0];
 
+  [~, ~, transient_fun] = get_fcns(part.act_list{1});
+
   while length(search_set_queue) > 0
     % Take from queue
     search_set = search_set_queue(1);
@@ -35,7 +37,7 @@ function [] = search_trans_reg(part, search_depth)
     for U_size = length(U):-1:1
       for Up = nchoosek(U, U_size)'
         if ~part.has_superior_trans_reg(Up, search_set)
-          if isTransientLinMulti(search_set, part.act_list(Up'), 4)
+          if transient_fun(search_set, part.act_list(Up'))
             part.trans_reg_U{end+1} = Up;
             part.trans_reg_rec{end+1} = search_set;
           end 

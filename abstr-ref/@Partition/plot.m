@@ -1,6 +1,6 @@
 function plot(part, alpha, add_numbers)
-  % Plot a 2d partition, regions with the same AP are plotted
-  % in the same color.
+  % plot(part, alpha, add_numbers): 
+  % plot a 2d partition, regions with the same AP are plotted in the same color.
 
   if nargin<2
     alpha = 1;
