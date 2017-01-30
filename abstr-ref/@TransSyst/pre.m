@@ -1,4 +1,4 @@
-function [ret, cont] = pre(ts, X, U, quant1, quant2)
+function [V, cont] = pre(ts, X, U, quant1, quant2)
   % Compute pre(X) under (quant1, quant2)-controllability
   % and action set U. 
   %
@@ -7,6 +7,10 @@ function [ret, cont] = pre(ts, X, U, quant1, quant2)
 
   if nargout > 1
     Kmap = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
+  end
+
+  if isa(U, 'char') && strcmp(U, 'all')
+    U = uint32(1:ts.n_a);
   end
 
   log_idx = false(1, ts.n_s);
@@ -57,9 +61,9 @@ function [ret, cont] = pre(ts, X, U, quant1, quant2)
     end
   end
 
-  ret = zeros(1, sum(log_idx), 'uint32');
-  ret(:) = find(log_idx);
+  V = zeros(1, sum(log_idx), 'uint32');
+  V(:) = find(log_idx);
   if nargout > 1
-    cont = Controller(ret, Kmap, 'simple', 'pre');
+    cont = Controller(V, Kmap, 'simple', 'pre');
   end
 end

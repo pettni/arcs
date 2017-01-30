@@ -36,12 +36,10 @@ Necmiye Ozay, University of Michigan
 ## Todo list
 
  - Implement remaining algorithms from manuscript, including control extraction
- - Create class that handles control strategy
- - (Candidate) losing set algorithms
- - Recursive candidate set computation
  - Class for semialgebraic partition/sets
  - Additional tests
     - Control strategies
+    - Candidate sets
     - System-level test
  - Improve documentation of function
 

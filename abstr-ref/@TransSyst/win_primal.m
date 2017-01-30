@@ -1,10 +1,12 @@
-function [V, CV, cont] = win_primal(ts, A, B, C_list, quant1, V)
+function [V, Cv, cont] = win_primal(ts, A, B, C_list, quant1, V)
   % Compute winning set of
   %  []A && <>[]B &&_i []<>C_i
   % under (quant1, forall)-controllability
   % with the initial condition V ("warm start")
   %
   % Returns a sorted set
+  %
+  % Expanding algo
   
   if nargin<6
     V = [];
@@ -28,14 +30,21 @@ function [V, CV, cont] = win_primal(ts, A, B, C_list, quant1, V)
 
   ts.create_fast();
 
+  iter = 1;
   while true
-    Z = ts.pre(V, 1:ts.n_a, quant1, 'forall');
+    Z = ts.pre(V, 'all', quant1, 'forall');
     Z = union(Z, ts.pre_pg(V, A, quant1));
 
     if nargout > 2
-      [Vt, Kt] = ts.win_intermediate(A, B, Z, C_list, quant1);
+      [Vt, Ct, Kt] = ts.win_intermediate(A, B, Z, C_list, quant1);
+    elseif nargout > 1
+      [Vt, Ct] = ts.win_intermediate(A, B, Z, C_list, quant1);
     else
       Vt = ts.win_intermediate(A, B, Z, C_list, quant1);
+    end
+
+    if nargout > 1 && iter == 1
+      C_rec = Ct;
     end
 
     if length(Vt) == length(V)
@@ -48,19 +57,14 @@ function [V, CV, cont] = win_primal(ts, A, B, C_list, quant1, V)
     end
 
     V = Vt;
+    iter = iter+1;
   end
 
   % Candidate set
-  CV = setdiff(ts.pre(V, 1:ts.n_a, quant1, 'exists'), V);
-
-  CV = union(CV, setdiff(intersect(A, B), ts.win_always(intersect(A, B), quant1)));
-
-  % for i=1:length(C_list)
-  %   W1j = ts.win_until(B, intersect(B, C_list{i}), quant1);
-  %   CV = union(CV, W1j);
-  % end
-
-  % CV = union(CV, setdiff(A, ts.win_always(A, quant1)));
+  if nargout > 1
+    % Expanding: C_rec + pre(V)\V
+    Cv = union(setdiff(ts.pre(V, 'all', quant1, 'exists'), V), C_rec);
+  end
 
   % Controller
   if nargout > 2

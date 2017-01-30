@@ -1,13 +1,17 @@
 % Should be replaced when dual algos implemented!
-function [V, cont] = win_always(ts, V, quant1)
+function [V, Cv, cont] = win_always(ts, B, quant1)
   % Compute the winning set of
-  %  [] V
+  %  [] B
   % under (quant1, forall)-controllability
 
   % Note: V must be sorted
   % Returns a sorted set
+  % 
+  % Contracting algorithm
+
+  V = B;
   while true
-    Vt = intersect(V, ts.pre(V, 1:ts.n_a, quant1, 'forall'));
+    Vt = intersect(B, ts.pre(V, 'all', quant1, 'forall'));
     if length(V) == length(Vt)
       break
     end
@@ -15,7 +19,12 @@ function [V, cont] = win_always(ts, V, quant1)
   end
 
   if nargout > 1
-    [~, cont] = ts.pre(V, 1:ts.n_a, quant1, 'forall');
+    % Contracting: first minus last
+    Cv = setdiff(B, V);
+  end
+
+  if nargout > 2
+    [~, cont] = ts.pre(V, 'all', quant1, 'forall');
     cont.from = 'win_always';
   end
 
