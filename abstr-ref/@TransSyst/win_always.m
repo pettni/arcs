@@ -16,7 +16,7 @@ function [V, cont] = win_always(ts, V, quant1)
 
   if nargout > 1
     [~, cont] = ts.pre(V, 1:ts.n_a, quant1, 'forall');
-    cont.restrict_to(V);
+    cont.from = 'win_always';
   end
 
 end

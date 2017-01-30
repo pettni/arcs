@@ -29,6 +29,10 @@ function [V, cont] = win_intermediate(ts, A, B, P, C_list, quant1)
   end
 
   if nargout > 1
-    cont = Controller(V, Klist, 'recurrence');
+    Vlist = {V};
+    for i = 1:length(C_list)
+      Vlist{end+1} = intersect(B, C_list{i});
+    end
+    cont = Controller(Vlist, Klist, 'recurrence', 'win_intermediate');
   end
 end

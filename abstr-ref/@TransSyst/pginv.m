@@ -12,7 +12,7 @@ function [W, cont] = pginv(ts, U, G, Z, B, quant1)
      (strcmp(quant1, 'forall') && ~isempty(setdiff(1:ts.n_a, U))) || ... % uncontrolled actions
      isempty(intersect(ts.pre(Z, U, quant1, 'exists'), W))  % no reach to Z
     W = [];
-    K = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
+    cont = Controller(W, containers.Map(), 'simple');
     return
   end
 
@@ -34,5 +34,6 @@ function [W, cont] = pginv(ts, U, G, Z, B, quant1)
   if nargout > 1
     [~, cont] = ts.pre(union(W, Z), U, quant1, 'forall');
     cont.restrict_to(W);
+    cont.from = 'pginv';
   end
 end

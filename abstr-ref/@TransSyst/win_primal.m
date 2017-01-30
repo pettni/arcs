@@ -64,8 +64,7 @@ function [V, CV, cont] = win_primal(ts, A, B, C_list, quant1, V)
 
   % Controller
   if nargout > 2
-    cont = Controller(Vlist, Klist, 'reach');
-    cont.restrict_to(V);
+    cont = Controller(Vlist, Klist, 'reach', 'win_primal');
   end
 
 end

@@ -60,6 +60,6 @@ function [ret, cont] = pre(ts, X, U, quant1, quant2)
   ret = zeros(1, sum(log_idx), 'uint32');
   ret(:) = find(log_idx);
   if nargout > 1
-    cont = Controller(ret, Kmap, 'simple');
+    cont = Controller(ret, Kmap, 'simple', 'pre');
   end
 end

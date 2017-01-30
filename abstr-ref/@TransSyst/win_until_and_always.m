@@ -1,4 +1,4 @@
-function [V, K] = win_until_and_always(ts, A, B, P, quant1)
+function [V, cont] = win_until_and_always(ts, A, B, P, quant1)
   % Compute the winning set of
   %   []A && B U P
   % under (quant1, forall)-controllability
@@ -6,9 +6,10 @@ function [V, K] = win_until_and_always(ts, A, B, P, quant1)
   % Note: A must be sorted
   % Returns a sorted set
   if nargout > 1
-    [Vinv, Kinv] = ts.win_always(A, quant1);
-    [V, K] = ts.win_until(intersect(B, Vinv), intersect(P, Vinv), quant1);
-    cont = K.add_safety(Kinv);
+    [Vinv, cont_inv] = ts.win_always(A, quant1);
+    [V, cont] = ts.win_until(intersect(B, Vinv), intersect(P, Vinv), quant1);
+    cont.add_safety(cont_inv);
+    cont.from = 'win_until_and_always';
   else
     Vinv = ts.win_always(A, quant1);
     V = ts.win_until(intersect(B, Vinv), intersect(P, Vinv), quant1);
