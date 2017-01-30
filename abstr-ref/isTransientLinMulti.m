@@ -7,10 +7,10 @@ function result = isTransientLinMulti(rec1, dyn_list, deg)
   else
     % Multi-mode
     new_dyn_list = {};
+    n_x = size(dyn_list{1}{1}, 2);
+    x = sdpvar(n_x, 1);
     if length(dyn_list{1}) == 2
       % No disturbance
-      n_x = size(dyn_list{1}{1}, 2);
-      x = sdpvar(n_x, 1);
       for i=1:length(dyn_list)
         new_dyn_list{i} = {dyn_list{i}{1}*x + dyn_list{i}{2}, x};
       end
@@ -19,5 +19,4 @@ function result = isTransientLinMulti(rec1, dyn_list, deg)
     end
     result = isTransientNLinMulti(rec1, new_dyn_list, deg);
   end
-
 end

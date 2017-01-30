@@ -1,4 +1,4 @@
-function [V, CV, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
+function [V, CV, cont] = win_primal(ts, A, B, C_list, quant1, V)
   % Compute winning set of
   %  []A && <>[]B &&_i []<>C_i
   % under (quant1, forall)-controllability
@@ -61,5 +61,11 @@ function [V, CV, Vlist, Klist] = win_primal(ts, A, B, C_list, quant1, V)
   % end
 
   % CV = union(CV, setdiff(A, ts.win_always(A, quant1)));
+
+  % Controller
+  if nargout > 2
+    cont = Controller(Vlist, Klist, 'reach');
+    cont.restrict_to(V);
+  end
 
 end

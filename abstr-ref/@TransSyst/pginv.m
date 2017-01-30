@@ -1,4 +1,4 @@
-function [W, K] = pginv(ts, U, G, Z, B, quant1)
+function [W, cont] = pginv(ts, U, G, Z, B, quant1)
   % Compute U-controlled set
   % contained in G \cap B \setdiff Z that can be
   % used to force a transition to Z using the progress
@@ -29,5 +29,10 @@ function [W, K] = pginv(ts, U, G, Z, B, quant1)
       break
     end
     W = Wt;
+  end
+
+  if nargout > 1
+    [~, cont] = ts.pre(union(W, Z), U, quant1, 'forall');
+    cont.restrict_to(W);
   end
 end

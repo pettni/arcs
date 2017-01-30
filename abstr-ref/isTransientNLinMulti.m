@@ -7,7 +7,7 @@ function result = isTransientNLin(rec1, dyn_list, deg)
 
   global ops;
 
-  [Bx, coefs, mons] = polynomial(dyn_list{1}{2}, deg, 1);
+  [Bx, coefs] = polynomial(dyn_list{1}{2}, deg, 1);
 
   epsilon = 10;
 
@@ -16,38 +16,54 @@ function result = isTransientNLin(rec1, dyn_list, deg)
   sos_mult = [];
   msos_coefs = [];
 
-  for dyn_nr=1:length(dyn_list)
-    dyn = dyn_list{dyn_nr};
-    if length(dyn) > 2
-      % Disturbance
-      all_rec = Rec([rec1.xmin dyn{4}.xmin; rec1.xmax dyn{4}.xmax]);
-      all_vars = [dyn{2}; dyn{3}];
-    else
-      % No disturbance
-      all_rec = rec1;
-      all_vars = dyn{2};
+  xvars = dyn_list{1}{2};
+  all_vars = xvars;
+  for i=1:length(dyn_list)
+    if length(dyn_list{i}) > 2
+      all_vars = [all_vars; dyn_list{i}{3}];
     end
+  end
+  
+  % Add x constraints
+  for i=1:length(xvars)
+    polys = [polys; rec1.xmin(i)-xvars(i)]; %<=0;
+    polys = [polys; xvars(i)-rec1.xmax(i)];
+    [sm1 sc1] = polynomial(all_vars,deg-1,0);
+    [sm2 sc2] = polynomial(all_vars,deg-1,0);
+    sos_mult = [sos_mult; sm1; sm2];
+    msos_coefs = [msos_coefs; sc1; sc2];
+    F = [F; sos(sm1); sos(sm2)];
+  end
 
-    % Add bounding conditions
-    for i =1:length(all_vars)
-        polys = [polys; all_rec.xmin(i)-all_vars(i)]; %<=0;
-        polys = [polys; all_vars(i)-all_rec.xmax(i)];
-        [sm1 sc1] = polynomial(all_vars,deg-1,0);
-        [sm2 sc2] = polynomial(all_vars,deg-1,0);
-        sos_mult = [sos_mult;sm1;sm2];
-        msos_coefs = [msos_coefs; sc1;sc2;];
-        F = [F; sos(sm1); sos(sm2)];
+  % Add d constraints
+  for i=1:length(dyn_list)
+    if length(dyn_list{i}) > 2
+      d_vars = dyn_list{3};
+      d_rec = dyn_list{4};
+      for j=1:length(d_var)
+        polys = [polys; d_rec.xmin(i)-d_vars(i)]; %<=0;
+        polys = [polys; d_vars(i)-d_rec.xmax(i)];
+      end
+      [sm1 sc1] = polynomial(all_vars,deg-1,0);
+      [sm2 sc2] = polynomial(all_vars,deg-1,0);
+      sos_mult = [sos_mult; sm1; sm2];
+      msos_coefs = [msos_coefs; sc1; sc2];
+      F = [F; sos(sm1); sos(sm2)];
     end
+  end
 
-    F = [F; sos(sos_mult'*polys - jacobian(Bx, dyn{2})*dyn{1} - epsilon)];
+  % Add lyapunov constraints
+  for i=1:length(dyn_list)
+    F = [F; sos(sos_mult'*polys - jacobian(Bx, xvars)*dyn_list{i}{1} - epsilon)];
   end
 
   diagnostics = solvesos(F, [], ops, [coefs; msos_coefs]);
+  % value(coefs)
 
   if diagnostics.problem ~= 0 %0 feas, 1 infeas, other something else
-      result = false;
+    result = false;
   else
-      result = true;
+    result = true;
   end
 
 end

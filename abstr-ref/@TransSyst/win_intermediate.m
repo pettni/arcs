@@ -1,4 +1,4 @@
-function [V, Klist] = win_intermediate(ts, A, B, P, C_list, quant1)
+function [V, cont] = win_intermediate(ts, A, B, P, C_list, quant1)
   % Compute winning set of
   %  []A && ( (B U P) || [] (B &&_i <>C_i) )
   % under (quant1, forall)-controllability
@@ -26,5 +26,9 @@ function [V, Klist] = win_intermediate(ts, A, B, P, C_list, quant1)
       break
     end
     V = Vt;
+  end
+
+  if nargout > 1
+    cont = Controller(V, Klist, 'recurrence');
   end
 end

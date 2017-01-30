@@ -40,7 +40,7 @@ if r1 == n
 else
     r2 = rank([Ad Kd]);
     if r2~=r1
-      result = 1;
+      result = true;
       return
     else
       Hr = [eye(rec1.dim); -eye(rec1.dim)]; Kr = [rec1.xmax'; rec1.xmin'];
@@ -50,9 +50,9 @@ else
       global ops;
       diagnostics = solvesdp(Consts, Obj, ops);
       if diagnostics.problem ~= 0 %0 feas, 1 infeas, other something else
-        result = 1;
+        result = true;
       else
-        result = 0;
+        result = false;
       end
     end
 end
