@@ -1,18 +1,27 @@
 clear all;
-maxiter = 650;
+global ops
+ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
+
+maxiter = 1000;
 split_inv = true;   % to avoid zeno
 
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
-
-cd radiant_data
-  [a1 k1 e1 a2 k2 e2] = radiant_dyn();
-cd ..
 
 % Disturbance: unit is W/m^2 --- heat added per unit floor area
 dmax = 0;
 d_rec = Rec([-dmax -dmax; dmax dmax]);
 
-act_set = {{a1, k1, e1, d_rec}, {a2, k2, e2, d_rec}};
+cd radiant_data
+  if false
+    [a1 k1 e1 a2 k2 e2] = radiant_dyn();
+    act_set = {{a1, k1}, {a2, k2}};
+  else
+    load a1; load a2; load b1; load b2
+    b1(3) = b1(3)/10;
+    b2(3) = b2(3)/10;
+    act_set = {{a1, b1}, {a2, b2}};
+  end
+cd ..
 
 tic
 
@@ -26,6 +35,9 @@ part.create_ts();
 part.add_mode(act_set{1});
 part.add_mode(act_set{2});
 
+% Search for transient regions
+part.search_trans_reg(3);
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 % SYNTHESIS-REFINEMENT %
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,14 +46,8 @@ Win = [];
 iter = 0;
 while true
 
-  if isempty(Win)
-    vol = 0;
-  else
-    vol = sum(volume(part(Win)))/volume(part.domain);
-  end
-
   time = toc;
-  disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ', winning set volume ', num2str(vol)])
+  disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ', winning set volume ', num2str(sum(volume(part.cell_list(Win)))/volume(part.domain))])
 
   % Solve <>[] 'SET'
   [Win, Cwin] = part.ts.win_primal([], part.get_cells_with_ap({'SET'}), ...
@@ -56,15 +62,11 @@ while true
 
   % Split largest cell in candidate set
   [~, C_index] = max(volume(part.cell_list(Cwin)));
-  [ind1, ind2] = part.split_cell(Cwin(C_index));
-
-  % If we happened to split winning set, update it
-  if ismember(ind1, Win)
-    Win(end+1) = ind2;
-  end
+  part.split_cell(Cwin(C_index));
 
   iter = iter + 1;
 end
+
 
 % Split final set to eliminate Zeno
 if split_inv
@@ -78,7 +80,6 @@ if split_inv
 end
 
 % Get control strategy
-[Win, ~, Vlist, Klist] = ...
-    part.ts.win_primal([], part.get_cells_with_ap({'SET'}), [], 'exists');
+[~, ~, cont] = part.ts.win_primal([], part.get_cells_with_ap({'SET'}), [], 'exists');
 
 toc

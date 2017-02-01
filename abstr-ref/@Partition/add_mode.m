@@ -12,25 +12,23 @@ function add_mode(part, fx)
   act_n = part.ts.add_action();
   part.act_list{act_n} = fx;
 
-  [trans_fun, trans_out_fun, transient_fun] = get_fcns(fx);
-
   % Figure out transitions
   for i=1:length(part)
     % Neighbor transitions
     adj = part.get_neighbors(i);
     for j=adj
-      if trans_fun(part.cell_list(i), part.cell_list(j))
+      if is_trans(part.cell_list(i), part.cell_list(j), fx)
         part.ts.add_transition(i, j, act_n);
       end
     end
 
     % Out-of-domain
-    if trans_out_fun(part.cell_list(i), part.domain)
+    if is_trans_out(part.cell_list(i), part.domain, fx)
       part.ts.add_transition(i, length(part)+1, act_n);
     end
 
     % Self transitions
-    if ~transient_fun(part.cell_list(i), {fx})
+    if ~is_transient(part.cell_list(i), {fx})
       part.ts.add_transition(i, i, act_n);
     end
   end

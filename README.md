@@ -41,7 +41,8 @@ Necmiye Ozay, University of Michigan
     - Control strategies
     - Candidate sets
     - System-level test
- - Improve documentation of function
+ - Improve documentation
+ - Write custom SOS optimization to avoid overhead (translate python socp impl.)
 
 ## References
 

@@ -16,7 +16,7 @@ function test_invariance(testCase)
 
     verifyEqual(testCase, cont1(2), uint32(1));
 
-    [~, ~, cont2] = ts.win_always([1, 2], 'exists');
+    [W, ~, cont2] = ts.win_primal([1, 2], [], [], 'exists');
 
     verifyEqual(testCase, cont2(1), uint32(1));
     verifyEqual(testCase, cont2(2), uint32(1));

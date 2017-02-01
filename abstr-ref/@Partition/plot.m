@@ -16,7 +16,7 @@ function plot(part, alpha, add_numbers)
   hold on;
 
   aps = part.get_all_aps;
-  colors = prism(length(aps));
+  colors = winter(length(aps));
   h_list = [];
   legend_list = {};
 

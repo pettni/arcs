@@ -1,17 +1,17 @@
-function result = isTransLin(rec1, rec2, dyn)
-  % isTransLin(rec1, rec2, dyn): Return false if a certificate that 
+function result = is_trans_lin(rec1, rec2, dyn)
+  % is_trans_lin(rec1, rec2, dyn): Return false if a certificate that 
   % guarantees the non-existence of a flow from rec1 to rec2 under 
   % linear dynamics dyn is found, true otherwise
   % 
   % Inputs:
   %   - rec1, rec2: sets
-  %   - dyn = {A, K, E, drec}: dynamics \dot x = Ax + K + Ed, d \in drec
+  %   - dyn = {A, K, (E, drec)}: dynamics \dot x = Ax + K + Ed, d \in drec
 
   isect_rec = intersect(rec1,rec2);
 
   % overlapping
   if isect_rec.isFullDim
-    warning('isTransLinRec: was called with overlapping Recs - returning true');
+    warning('is_trans_lin: was called with overlapping Recs - returning true');
     result = true;
     return;
   end

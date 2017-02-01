@@ -6,10 +6,13 @@ classdef Partition<handle
     domain;  % Domain
     adjacency; % Sparse matrix containing adjacency information
     adjacency_outside; % Which cells are at the boundary of the domain?
-    ts;       % associated transition system
     act_list  % list of added modes
     trans_reg_U; % list of transient regions
     trans_reg_rec;
+  end
+
+  properties
+    ts;       % associated transition system
   end
 
   methods

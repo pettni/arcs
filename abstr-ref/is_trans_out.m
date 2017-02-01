@@ -1,12 +1,11 @@
-function ret = isTransOutLin(rec, dom, fx)
+function ret = is_trans_out(rec, dom, fx)
   % Assuming that rec \subset dom, see if there is a transition from
   % rec to the outside of dom.
-  dim = rec.dim;
-  rest = mldivide( Rec([-Inf*ones(1,dim); Inf*ones(1,dim)]), dom);
+  rest = mldivide(Rec([-Inf*ones(1,rec.dim); Inf*ones(1,rec.dim)]), dom);
   ret = false;
   for part=rest
     if intersects(rec, part)
-      if isTransLin(rec, part, fx)
+      if is_trans(rec, part, fx)
         ret = true;
         return;
       end

@@ -105,23 +105,6 @@ classdef Controller<handle
       a_list = bottom_cnt.subcontrollers(state);
     end
 
-    function add_safety(cont, s_cont)
-      % Intersect controller actions with those of safe controller s_cont
-      if strcmp(cont.control_type, 'simple')
-        keys = cont.subcontrollers.keys();
-        for i = 1:length(keys)
-          if s_cont.subcontrollers.isKey(keys{i})
-            cont.subcontrollers(keys{i}) = intersect(cont.subcontrollers(keys{i}), ...
-                                                     s_cont.subcontrollers(keys{i}));
-          end
-          cont.sets = intersect(cont.sets, s_cont.sets);
-        end
-      else
-        for i = 1:length(cont.subcontrollers)
-          cont.subcontrollers{i}.add_safety(s_cont);
-        end
-      end
-    end
     function restrict_to(cont, r_set)
       % Restrict controller domain
       if strcmp(cont.control_type, 'simple')

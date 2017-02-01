@@ -1,4 +1,4 @@
-clear all;
+% clear all;
 yalmip clear;
 
 global ops
@@ -9,23 +9,11 @@ goal_set = Rec([-1 0.5; -0.2 1.8], {'goal'});
 unsafe_set = Rec([-2 -1.5; -.5 -1], {'unsafe'});
 
 maxiter = 80;
-show_plot = 1;
-use_pgs = 1;
+show_plot = 0;
+% use_pgs = 1;
+% disturbance = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-sdpvar x1 x2
-vars = [x1; x2];
-
-%Moore Greitzer
-fx1 = [-x2-0.5*x1^3-1.5*x1;...
-       -x2^2+2+x1];
-fx2 = [-x2-0.5*x1^3-1.5*x1;...
-       -x2+x1];
-fx3 = [-x2-0.5*x1^3-1.5*x1+2;...
-       10+x1];
-fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
-       -10+x1];
 
 % Build initial partition
 part = Partition(domain);
@@ -38,19 +26,50 @@ if ~use_pgs
   part.ts.b_disable_pg = true;
 end
 
-dyn_list = {{fx1, vars}, {fx2, vars}, {fx3, vars}, {fx4, vars}};
+sdpvar x1 x2 d1
+
+if ~disturbance
+  fx1 = [-x2-0.5*x1^3-1.5*x1;...
+      -x2^2+2+x1];
+  fx2 = [-x2-0.5*x1^3-1.5*x1;...
+      -x2+x1];
+  fx3 = [-x2-0.5*x1^3-1.5*x1+2;...
+      10+x1];
+  fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
+      -10+x1];
+
+  dyn_list = {{fx1, [x1; x2]}, ...
+            {fx2, [x1; x2]}, ...
+            {fx3, [x1; x2]}, ...
+            {fx4, [x1; x2]}};
+else
+  fx1 = [-x2-0.5*x1^3-1.5*x1;...
+      -x2^2+2+x1+d1];
+  fx2 = [-x2-0.5*x1^3-1.5*x1;...
+      -x2+x1+d1];
+  fx3 = [-x2-0.5*x1^3-1.5*x1+2;...
+      10+x1+d1];
+  fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
+      -10+x1+d1];
+
+  d_rec = Rec([-0.005, 0.005]);
+  dyn_list = {{fx1, [x1; x2], [d1], d_rec}, ...
+              {fx2, [x1; x2], [d1], d_rec}, ...
+              {fx3, [x1; x2], [d1], d_rec}, ...
+              {fx4, [x1; x2], [d1], d_rec}};
+end
 
 % Create transition system
 part.create_ts();
 
 % Add modes
 part.add_mode(dyn_list{1})
-% part.add_mode(dyn_list{2});
-% part.add_mode(dyn_list{3});
-% part.add_mode(dyn_list{4});
+part.add_mode(dyn_list{2});
+part.add_mode(dyn_list{3});
+part.add_mode(dyn_list{4});
 
-% Search for rec areas
-part.search_trans_reg(1);
+% Search for transient areas
+part.search_trans_reg(3);
 
 Win = [];
 iter = 0;
@@ -77,7 +96,7 @@ while true
   if show_plot
     clf; hold on
     part.plot_vf();
-    % plot(part(Cwin), [0 0 1], 0.8, 0);
+    plot(part(Cwin), [0 0 1], 0.8, 0);
     drawnow;
   end
 
@@ -88,10 +107,13 @@ while true
   iter = iter + 1;
 end
 
-  if show_plot
-    clf; hold on
-    part.plot();
-    drawnow;
-  end
+if show_plot
+  clf; hold on
+  part.plot();
+  drawnow;
+end
 
 [~, ~, cont] = part.ts.win_primal(A, B, [], 'exists');
+
+dstring = datestr(now);
+save(strcat('save', dstring, '.mat'), 'part', 'Win', 'cont')

@@ -1,9 +1,7 @@
-function result = isTransientNLin(rec1, dyn_list, deg)
-  % Nonlinear systems transience based on barrier certificate type conditions
-  % N.O., June, 2013
-  % Caltech
-  % N.O., Feb, 2016, nonlinear version
-  % Michigan
+function result = is_transient_nlin(rec1, dyn_list, deg)
+  % Determine if the modes dyn_list = {fx1, fx2, ...}, where
+  % fx = {f, xvar, (dvar, drec)} is transient on rec1 using 
+  % relaxation order deg
 
   global ops;
 
@@ -38,11 +36,11 @@ function result = isTransientNLin(rec1, dyn_list, deg)
   % Add d constraints
   for i=1:length(dyn_list)
     if length(dyn_list{i}) > 2
-      d_vars = dyn_list{3};
-      d_rec = dyn_list{4};
-      for j=1:length(d_var)
-        polys = [polys; d_rec.xmin(i)-d_vars(i)]; %<=0;
-        polys = [polys; d_vars(i)-d_rec.xmax(i)];
+      d_vars = dyn_list{i}{3};
+      d_rec = dyn_list{i}{4};
+      for j=1:length(d_vars)
+        polys = [polys; d_rec.xmin(j)-d_vars(j)]; %<=0;
+        polys = [polys; d_vars(j)-d_rec.xmax(j)];
       end
       [sm1 sc1] = polynomial(all_vars,deg-1,0);
       [sm2 sc2] = polynomial(all_vars,deg-1,0);
@@ -58,7 +56,6 @@ function result = isTransientNLin(rec1, dyn_list, deg)
   end
 
   diagnostics = solvesos(F, [], ops, [coefs; msos_coefs]);
-  % value(coefs)
 
   if diagnostics.problem ~= 0 %0 feas, 1 infeas, other something else
     result = false;
