@@ -44,6 +44,18 @@ classdef PolyLinTrans<handle
       plt.data = plt1.data + plt2.data;
     end
 
+    function ret = mtimes(T, p)
+      % Compute T p for a PolyLinTrans T and polynomial p
+      if T.n0 ~= p.dim
+        error('dimension mismatch')
+      end
+      if T.d0 < p.deg
+        error('degree is too high')
+      end
+      ret_monv = T.as_vector_trans * p.mon_vec;
+      ret = Polynomial(T.n1, ret_monv);
+    end
+
     function ret = as_vector_trans(plt)
       % Return a representation A of the transformation from a vector
       % representing a symmetric matrix.
@@ -147,23 +159,19 @@ classdef PolyLinTrans<handle
       end
     end
 
-    function plt = mul_pol(n, d, q_grlex, q_coef)
+    function plt = mul_pol(n, d, q)
       % Transformation p |-> q * p
-      % q = \sum q_coef x^q_grlex
-      if size(q_grlex, 2) ~= length(q_coef)
-        error('dimension mismatch')
-      end
-      if size(q_grlex, 1) ~= n
+      % q Polynomial
+      if ~isa(q, 'Polynomial') && q.dim ~= n
         error('variable mismatch')
       end
 
-      qdeg = max(sum(q_grlex,1));
-      plt = PolyLinTrans(n, n, d, d+qdeg);
-      for j = 1:size(q_grlex, 2)
+      plt = PolyLinTrans(n, n, d, d+q.deg);
+      for j = 1:size(q.mons, 2)
         grlex_i = zeros(n, 1);
         while sum(grlex_i) <= d
-          grlex_j = grlex_i + q_grlex(:, j);
-          plt.data{mono_rank_grlex(n, grlex_i)}(mono_rank_grlex(n, grlex_j)) = q_coef(j);
+          grlex_j = grlex_i + q.mons(:, j);
+          plt.data{mono_rank_grlex(n, grlex_i)}(mono_rank_grlex(n, grlex_j)) = q.coef(j);
           grlex_i = mono_next_grlex(n, grlex_i);
         end
       end
@@ -171,14 +179,4 @@ classdef PolyLinTrans<handle
     end
   end
 
-end
-
-function ret = count_monomials_leq(n,d)
-  % Number of monomials in n variables of degree less than or equal to d
-  ret = nchoosek(n+d, d);
-end
-
-function ret = count_monomials_eq(n,d)
-  % Number of monomials in n variables of degree equal to d
-  ret = nchoosek(n+d-1, d);
 end

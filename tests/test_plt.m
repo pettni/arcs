@@ -32,7 +32,7 @@ function test_mulpol(testCase)
   grlex = [2  0 1;
            0  2 0];
   coefs = [1 -1 3];
-  L = PolyLinTrans.mul_pol(2, 3, grlex, coefs);
+  L = PolyLinTrans.mul_pol(2, 3, Polynomial(coefs, grlex));
 
   verifyEqual(testCase, L.d0, 3);
   verifyEqual(testCase, L.d1, 5);
@@ -77,7 +77,7 @@ function test_as_vector_trans(testCase)
   grlex = [2  0 1;
            0  2 0];
   coefs = [1 -1 3];
-  L = PolyLinTrans.mul_pol(2, 3, grlex, coefs);
+  L = PolyLinTrans.mul_pol(2, 3, Polynomial(coefs, grlex));
   AL = L.as_vector_trans();
   for i = 1:size(AL,1)
     for j = 1:size(AL,2)
@@ -119,12 +119,4 @@ function test_k_ij(testCase)
   [i,j] = symmat_k_ij(7, 21);
   verifyEqual(testCase, i, 2);
   verifyEqual(testCase, j, 2);
-end
-
-function test_sdd_index(testCase)
-  verifyEqual(testCase, sdd_index(1,1,3), [1 2; 1 1])
-  verifyEqual(testCase, sdd_index(1,2,3), [1; 3])
-  verifyEqual(testCase, sdd_index(2,2,3), [1 3; 2 1])
-  verifyEqual(testCase, sdd_index(2,1,3), [1; 3])
-  verifyEqual(testCase, sdd_index(3,3,3), [2 3; 2 2])
 end

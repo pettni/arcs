@@ -12,20 +12,20 @@ function test_trans1(testCase)
 	verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, {A*x + K, x}, 10), false);
 end
 
-% function test_trans12(testCase)
-%   r1 = Rec([-1 -1; -0.1 0]);
-%   r2 = Rec([-1 0; -0.1 1]);
+function test_trans12(testCase)
+  r1 = Rec([-1 -1; -0.1 0]);
+  r2 = Rec([-1 0; -0.1 1]);
 
-%   A = [-1 -1; 1 -1];
-%   K = [1; 0];
-%   E = [0; 1];
-%   drec = Rec([0 0.2]);
+  A = [-1 -1; 1 -1];
+  K = [1; 0];
+  E = [0; 1];
+  drec = Rec([0 0.2]);
 
-%   x = sdpvar(2,1);
-%   d = sdpvar(1,1);
-%   verifyEqual(testCase, is_trans_nlin_sdsos(r1, r2, {A*x + K, x}), false);
-%   verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, {A*x + E*d + K, x, d, drec}), true);
-% end
+  x = sdpvar(2,1);
+  d = sdpvar(1,1);
+  verifyEqual(testCase, is_trans_nlin_sdsos(r1, r2, {A*x + K, x}, 10), false);
+  verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, {A*x + E*d + K, x, d, drec}, 10), true);
+end
 
 function test_nonl(testCase)
 

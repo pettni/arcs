@@ -180,5 +180,29 @@ classdef Rec<handle
       % Return true if rec2 does not touch the boundaries of rec1
       ret = all(rec1.xmax < rec2.xmax) && all(rec1.xmin>rec2.xmin);
     end
+
+    function p = bounding_polynomial(rec, i)
+      % Return the Polynomial p = (x_i^+ - x)*(x - x_i^-)
+      dm = rec.xmin(i);
+      dp = rec.xmax(i);
+      mons = zeros(rec.dim, 3);
+      mons(i, :) = [0 1 2];
+      p = Polynomial([-dm*dp dm+dp -1], mons);
+    end
+
+    function r = elvar(rec, i)
+      % return a lower-dimensional Rec where the i'th dimension 
+      % has been projected away
+      xm = rec.xmin(1:rec.dim ~= i);
+      xp = rec.xmax(1:rec.dim ~= i);
+      r = Rec([xm; xp]);
+      r.ap = rec.ap;
+    end
+
+    function r = mtimes(rec1, rec2)
+      % return higher-dimensional Rec rec1 x rec2
+      r = Rec([rec1.xmin rec2.xmin; rec1.xmax rec2.xmax]);
+    end
+
   end
 end
