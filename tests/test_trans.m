@@ -5,7 +5,7 @@ end
 function test_trans1(testCase)
 	r1 = Rec([0 0; 1 1]);
 	r2 = Rec([1 0; 2 1]);
-	A = [0.1 0; 0 0.1];
+	A = [0.09 0; 0 0.09];
 	K = [1; 0];
 	verifyEqual(testCase, is_trans(r1, r2, {A, K}), true);
 	verifyEqual(testCase, is_trans(r2, r1, {A, K}), false);
@@ -47,4 +47,9 @@ function test_nonl(testCase)
   r2 = Rec([0 0; 1 1.2]);
   verifyEqual(testCase, is_trans(r2, r1, {f, [x; y]}), true);
 
+end
+
+function setupOnce(testCase)  % do not change function name
+  global ops
+  ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
 end

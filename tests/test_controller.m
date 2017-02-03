@@ -16,7 +16,7 @@ function test_invariance(testCase)
 
     verifyEqual(testCase, cont1(2), uint32(1));
 
-    [W, ~, cont2] = ts.win_primal([1, 2], [], [], 'exists');
+    [W, ~, cont2] = ts.win_primal([1, 2], [], [], 'exists', 'forall');
 
     verifyEqual(testCase, cont2(1), uint32(1));
     verifyEqual(testCase, cont2(2), uint32(1));
@@ -33,7 +33,7 @@ function test_recurrence(testCase)
     ts.add_transition(2,1,2);
     ts.add_transition(1,1,2);
 
-    [~, ~, cont] = ts.win_primal([], [], {[1], [4]}, 'exists');
+    [~, ~, cont] = ts.win_primal([], [], {[1], [4]}, 'exists', 'forall');
     state = 1;
 
     count1 = 0;
@@ -68,11 +68,11 @@ function test_pginv(testCase)
 
     ts.add_progress_group([1, 2], [3, 4]);
 
-    [~, ~, cont1] = ts.pre_pg([1, 2], 1:4, 'exists');
+    [~, ~, cont1] = ts.pre_pg([1, 2], 1:4, true);
     verifyEqual(testCase, cont1(3), 1);
     verifyEqual(testCase, cont1(4), 1);
 
-    [~, ~, cont2] = ts.win_primal([], [1, 2], [], 'exists');
+    [~, ~, cont2] = ts.win_primal([], [1, 2], [], 'exists', 'forall');
 
     for i=1:8
         verifyEqual(testCase, cont2(3), uint32(1));

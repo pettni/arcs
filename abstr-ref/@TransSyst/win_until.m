@@ -13,7 +13,7 @@ function [V, Cv, cont] = win_until(ts, B, P, quant1)
   while true
     if nargout > 2
       % Normal pre
-      [preV, preK] = ts.pre(V, 'all', quant1, 'forall');
+      [preV, preK] = ts.pre(V, [], quant1, false);
       Vlist{end+1} = preV;
       Klist{end+1} = preK;
       Vt = union(P, intersect(B, preV));
@@ -27,14 +27,14 @@ function [V, Cv, cont] = win_until(ts, B, P, quant1)
       Vt = union(Vt, preVinv);
     elseif nargout > 1
       % Normal pre
-      preV = ts.pre(V, 'all', quant1, 'forall');
+      preV = ts.pre(V, [], quant1, false);
       Vt = union(P, intersect(B, preV));
 
       % PG pre
       [preVinv, CpreVinv] = ts.pre_pg(Vt, B, quant1);
       Vt = union(Vt, preVinv);
     else
-      preV = ts.pre(V, 'all', quant1, 'forall');
+      preV = ts.pre(V, [], quant1, false);
       Vt = union(P, intersect(B, preV));
       preVinv = ts.pre_pg(V, B, quant1);
       Vt = union(Vt, preVinv);
@@ -50,7 +50,7 @@ function [V, Cv, cont] = win_until(ts, B, P, quant1)
   end
 
   if nargout > 1
-    Cv = union(CpreVinv, setdiff(ts.pre(V, 'all', quant1, 'forall'), V));
+    Cv = union(CpreVinv, setdiff(ts.pre(V, [], quant1, false), V));
   end
 
   if nargout > 2

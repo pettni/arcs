@@ -14,7 +14,7 @@ function [V, Cv, cont] = win_intermediate(ts, A, B, P, C_list, quant1)
   iter = 1;
   while true
     Vt = V;
-    preV = ts.pre(V, 'all', quant1, 'forall');
+    preV = ts.pre(V, [], quant1, false);
     
     if nargout > 1
       Cv = [];

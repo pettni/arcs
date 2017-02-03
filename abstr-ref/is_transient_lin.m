@@ -48,7 +48,7 @@ function result = is_transient_lin(rec1, fx)
     else
       Ed = fx{3};
       n_d = size(Ed, 2);
-      d = sdpvar(n_d, 1)
+      d = sdpvar(n_d, 1);
       drec = fx{4};
       Consts = [Ad*x + Ed * d == -Kd, rec1.xmin' <= x, x <= rec1.xmax', ...
                                       drec.xmin' <= d <= drec.xmax'];

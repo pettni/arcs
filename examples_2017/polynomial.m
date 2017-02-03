@@ -9,8 +9,8 @@ goal_set = Rec([-1 0.5; -0.2 1.8], {'goal'});
 unsafe_set = Rec([-2 -1.5; -.5 -1], {'unsafe'});
 
 maxiter = 80;
-show_plot = 0;
-% use_pgs = 1;
+show_plot = 1;
+% use_pgs = 0;
 % disturbance = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,11 +20,6 @@ part = Partition(domain);
 part.add_area(goal_set);
 part.add_area(unsafe_set)
 part.check();   % sanity check
-
-% Disable progress groups
-if ~use_pgs
-  part.ts.b_disable_pg = true;
-end
 
 sdpvar x1 x2 d1
 
@@ -52,7 +47,7 @@ else
   fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
       -10+x1+d1];
 
-  d_rec = Rec([-0.005, 0.005]);
+  d_rec = Rec([-0.5, 0.5]);
   dyn_list = {{fx1, [x1; x2], [d1], d_rec}, ...
               {fx2, [x1; x2], [d1], d_rec}, ...
               {fx3, [x1; x2], [d1], d_rec}, ...
@@ -68,8 +63,13 @@ part.add_mode(dyn_list{2});
 part.add_mode(dyn_list{3});
 part.add_mode(dyn_list{4});
 
-% Search for transient areas
-part.search_trans_reg(3);
+% Disable progress groups
+if ~use_pgs
+  part.ts.b_disable_pg = true;
+else
+  % Search for transient areas
+  part.search_trans_reg(3);
+end
 
 Win = [];
 iter = 0;
@@ -80,7 +80,7 @@ while true
   A = setdiff(1:length(part), U);
   B = part.get_cells_with_ap({'goal'});
 
-  [Win, Cwin] = part.ts.win_primal(A, B, [], 'exists', Win);
+  [Win, Cwin] = part.ts.win_primal(A, B, [], 'exists', 'forall', Win);
   part.add_aps(Win, {'win'});
 
   Cwin = setdiff(Cwin, union(Win, U));
@@ -113,7 +113,4 @@ if show_plot
   drawnow;
 end
 
-[~, ~, cont] = part.ts.win_primal(A, B, [], 'exists');
-
-dstring = datestr(now);
-save(strcat('save', dstring, '.mat'), 'part', 'Win', 'cont')
+[~, ~, cont] = part.ts.win_primal(A, B, [], 'exists', 'forall');

@@ -8,13 +8,13 @@ split_inv = true;   % to avoid zeno
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
 
 % Disturbance: unit is W/m^2 --- heat added per unit floor area
-dmax = 0;
+dmax = 0.;
 d_rec = Rec([-dmax -dmax; dmax dmax]);
 
 cd radiant_data
-  if false
+  if true
     [a1 k1 e1 a2 k2 e2] = radiant_dyn();
-    act_set = {{a1, k1}, {a2, k2}};
+    act_set = {{a1, k1, e1, d_rec}, {a2, k2, e1, d_rec}};
   else
     load a1; load a2; load b1; load b2
     b1(3) = b1(3)/10;
@@ -51,10 +51,10 @@ while true
 
   % Solve <>[] 'SET'
   [Win, Cwin] = part.ts.win_primal([], part.get_cells_with_ap({'SET'}), ...
-                                   [], 'exists', Win);
+                                   [], 'exists', 'forall', Win);
 
   % No need to split inside winning set
-  Cwin = setdiff(Cwin, union(Win, length(part)+1));
+  Cwin = setdiff(Cwin, Win);
 
   if isempty(Cwin) || iter == maxiter
     break
@@ -80,6 +80,6 @@ if split_inv
 end
 
 % Get control strategy
-[~, ~, cont] = part.ts.win_primal([], part.get_cells_with_ap({'SET'}), [], 'exists');
+[~, ~, cont] = part.ts.win_primal([], part.get_cells_with_ap({'SET'}), [], 'exists', 'forall');
 
 toc

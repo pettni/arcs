@@ -41,12 +41,12 @@ function result = is_transient_nlin(rec1, dyn_list, deg)
       for j=1:length(d_vars)
         polys = [polys; d_rec.xmin(j)-d_vars(j)]; %<=0;
         polys = [polys; d_vars(j)-d_rec.xmax(j)];
+        [sm1 sc1] = polynomial(all_vars,deg-1,0);
+        [sm2 sc2] = polynomial(all_vars,deg-1,0);
+        sos_mult = [sos_mult; sm1; sm2];
+        msos_coefs = [msos_coefs; sc1; sc2];
+        F = [F; sos(sm1); sos(sm2)];
       end
-      [sm1 sc1] = polynomial(all_vars,deg-1,0);
-      [sm2 sc2] = polynomial(all_vars,deg-1,0);
-      sos_mult = [sos_mult; sm1; sm2];
-      msos_coefs = [msos_coefs; sc1; sc2];
-      F = [F; sos(sm1); sos(sm2)];
     end
   end
 

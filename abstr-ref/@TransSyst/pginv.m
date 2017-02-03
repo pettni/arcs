@@ -12,8 +12,8 @@ function [W, Cw, cont] = pginv(ts, U, G, Z, B, quant1)
   W = W1;
 
   if ts.b_disable_pg || ...  % pgs disabled
-     (strcmp(quant1, 'forall') && ~isempty(setdiff(1:ts.n_a, U))) || ... % uncontrolled actions
-     isempty(intersect(ts.pre(Z, U, quant1, 'exists'), W))  % no reach to Z
+     (~quant1 && ~isempty(setdiff(1:ts.n_a, U))) || ... % uncontrolled actions
+     isempty(intersect(ts.pre(Z, U, quant1, 1), W))  % no reach to Z
     W = [];
     Cw = [];
     cont = Controller(W, containers.Map(), 'simple');
@@ -21,13 +21,8 @@ function [W, Cw, cont] = pginv(ts, U, G, Z, B, quant1)
   end
 
   while true
-    if nargout > 2
-      % union is sorted
-      [preW, K] = ts.pre(union(W, Z), U, quant1, 'forall');
-    else
-      % union is sorted
-      preW = ts.pre(union(W, Z), U, quant1, 'forall');
-    end
+    % union is sorted
+    preW = ts.pre(union(W, Z), U, quant1, false);
     Wt = intersect(W, preW);
     if length(W) == length(Wt)
       break
@@ -41,7 +36,7 @@ function [W, Cw, cont] = pginv(ts, U, G, Z, B, quant1)
   end
 
   if nargout > 2
-    [~, cont] = ts.pre(union(W, Z), U, quant1, 'forall');
+    [~, cont] = ts.pre(union(W, Z), U, quant1, false);
     cont.restrict_to(W);
     cont.from = 'pginv';
   end

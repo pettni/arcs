@@ -1,15 +1,18 @@
 function [V, cont] = pre(ts, X, U, quant1, quant2)
   % Compute pre(X) under (quant1, quant2)-controllability
-  % and action set U. 
+  % and action set U. If U == [] all actions are considered
   %
   % Note: X must be sorted!
   % Returns a sorted set
+  %
+  % quant = false: forall  (non controllable)
+  % quant = true: exists   (controllable)
 
   if nargout > 1
     Kmap = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
   end
 
-  if isa(U, 'char') && strcmp(U, 'all')
+  if isempty(U)
     U = uint32(1:ts.n_a);
   end
 
@@ -40,13 +43,13 @@ function [V, cont] = pre(ts, X, U, quant1, quant2)
       else
         aPost = ts.post(q, a);
       end
-      if strcmp(quant2, 'exists')
+      if quant2
         act_list(i) = any(builtin('_ismemberhelper',aPost, X));
       else
         act_list(i) = all(builtin('_ismemberhelper',aPost, X)) && ~isempty(aPost);
       end
     end
-    if strcmp(quant1, 'exists')
+    if quant1
       if ~any(act_list)
         log_idx(q) = 0;
       elseif nargout > 1

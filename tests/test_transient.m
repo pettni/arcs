@@ -104,7 +104,7 @@ function test_radiant2(testCase)
   fx1 = A1*x + K1;
   fx2 = A2*x + K2;
 
-  verifyEqual(testCase, is_transient(r, {{fx1, x}}) , true);
+  verifyEqual(testCase, is_transient(r, {{fx1, x}}), true);
   verifyEqual(testCase, is_transient(r, {{fx2, x}}), true);
   verifyEqual(testCase, is_transient(r, {{fx1, x}, {fx2, x}}), false);
 end

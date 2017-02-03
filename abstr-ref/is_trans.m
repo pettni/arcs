@@ -7,4 +7,5 @@ function [res] = is_trans(rec1, rec2, dyn)
     res = is_trans_lin(rec1, rec2, dyn);
   else
     res = is_trans_nlin(rec1, rec2, dyn, 4);
+    % res = is_trans_nlin_sdsos(rec1, rec2, dyn, 16);
   end
