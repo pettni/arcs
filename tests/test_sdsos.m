@@ -21,7 +21,7 @@ function test_sdd(testCase)
 
   % Total equation is in 2 vars
   A_g = PolyLinTrans.eye(1, 2, 0, tot_deg).as_vector_trans;
-  A_s = PolyLinTrans.mul_pol(2, sigma_deg, g).as_matrix_trans;
+  A_s = PolyLinTrans.mul_pol(2, sigma_deg, tot_deg, g).as_matrix_trans;
   A_k = PolyLinTrans.eye(2, 2, tot_deg, tot_deg).as_matrix_trans;
 
   [r, res] = mosekopt('symbcon echo(0)'); 

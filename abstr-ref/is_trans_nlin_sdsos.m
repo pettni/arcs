@@ -75,7 +75,7 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
 
   for i = 1:all_rec.dim
     g = all_rec.bounding_polynomial(i);
-    Asi{end+1} = PolyLinTrans.mul_pol(all_rec.dim, sigma_deg, g).as_matrix_trans;
+    Asi{end+1} = PolyLinTrans.mul_pol(all_rec.dim, sigma_deg, tot_deg, g).as_matrix_trans;
     nsi(end+1) = size(Asi{end},2);
   end
 

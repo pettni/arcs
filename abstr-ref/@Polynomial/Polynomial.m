@@ -19,7 +19,7 @@ classdef Polynomial<handle
 
   methods
     function p = Polynomial(arg1, arg2)
-      if isa(arg1, 'sdpvar')
+      if nargin > 1 && isa(arg2, 'sdpvar')
         % sdpvar case
         [coef, mono_text] = coefficients(arg1);
         p.coef = coef;
@@ -33,9 +33,11 @@ classdef Polynomial<handle
         p.mons = zeros(arg1, 0);
         p.coef = [];
         p.mons = zeros(arg1, 0);
-        for i = 1:length(arg2)
-          p.coef(end+1) = arg2(i);
-          p.mons(:, end+1) = mono_unrank_grlex(arg1, i);
+        if nargin == 2
+          for i = 1:length(arg2)
+            p.coef(end+1) = arg2(i);
+            p.mons(:, end+1) = mono_unrank_grlex(arg1, i);
+          end
         end
       else
         % monomial/coefficient vector
@@ -79,6 +81,19 @@ classdef Polynomial<handle
       end
       for i=1:length(p.coef)
         ret(mono_rank_grlex(p.dim, p.mons(:,i))) = p.coef(i);
+      end
+    end
+
+    function ret = evaluate(p, point)
+      % Evaluate the polynomial at 'points' (n \times k)
+      size(point)
+      if size(point, 2) == 1
+        ret = sum(p.coef .* prod(point.^p.mons, 1));
+      else
+        ret = zeros(1, size(point, 2));
+        for i=1:size(point,2)
+          ret(1,i) = p.evaluate(point(:,i));
+        end
       end
     end
 

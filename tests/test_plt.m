@@ -10,6 +10,18 @@ function test_diff(testCase)
 	verifyEqual(testCase, L(6,3), sparse(2));
 end
 
+function test_eye(testCase)
+  L = PolyLinTrans.eye(2,3,2,2);
+
+  verifyEqual(testCase, L(1,1), sparse(1));
+  verifyEqual(testCase, L(2,3), sparse(1));
+  verifyEqual(testCase, L(3,4), sparse(1));
+  verifyEqual(testCase, L(4,7), sparse(1));
+  verifyEqual(testCase, L(5,9), sparse(1));
+  verifyEqual(testCase, L(6,10), sparse(1));
+end
+
+
 function test_elvar(testCase)
   L = PolyLinTrans.elvar(2, 2, 1, 0);
 
@@ -32,7 +44,7 @@ function test_mulpol(testCase)
   grlex = [2  0 1;
            0  2 0];
   coefs = [1 -1 3];
-  L = PolyLinTrans.mul_pol(2, 3, Polynomial(coefs, grlex));
+  L = PolyLinTrans.mul_pol(2, 3, 5, Polynomial(coefs, grlex));
 
   verifyEqual(testCase, L.d0, 3);
   verifyEqual(testCase, L.d1, 5);
@@ -77,13 +89,24 @@ function test_as_vector_trans(testCase)
   grlex = [2  0 1;
            0  2 0];
   coefs = [1 -1 3];
-  L = PolyLinTrans.mul_pol(2, 3, Polynomial(coefs, grlex));
+  L = PolyLinTrans.mul_pol(2, 3, 5, Polynomial(coefs, grlex));
   AL = L.as_vector_trans();
   for i = 1:size(AL,1)
     for j = 1:size(AL,2)
       verifyEqual(testCase, AL(i,j), sparse(L(j,i)));
     end
   end
+end
+
+function test_mul(testCase)
+  sdpvar x y;
+  p1 = Polynomial(x*y + x^2, [x;y]);
+  p2 = Polynomial(2 + y + y*x^2, [x;y]);
+  p3 = Polynomial((x*y + x^2) * (2 + y + y*x^2), [x;y]);
+  T1 = PolyLinTrans.mul_pol(2, 3, 6, p1);
+  T2 = PolyLinTrans.mul_pol(2, 6, 9, p2);
+  T3 = PolyLinTrans.mul_pol(2, 3, 9, p3);
+  verifyEqual(testCase, T2.as_vector_trans * T1.as_vector_trans, T3.as_vector_trans)
 end
 
 function test_ij_k(testCase)

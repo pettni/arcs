@@ -9,7 +9,7 @@ goal_set = Rec([-1 0.5; -0.2 1.8], {'goal'});
 unsafe_set = Rec([-2 -1.5; -.5 -1], {'unsafe'});
 
 maxiter = 80;
-show_plot = 1;
+show_plot = 0;
 % use_pgs = 0;
 % disturbance = 0;
 
@@ -47,7 +47,7 @@ else
   fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
       -10+x1+d1];
 
-  d_rec = Rec([-0.5, 0.5]);
+  d_rec = Rec([-0.1, 0.1]);
   dyn_list = {{fx1, [x1; x2], [d1], d_rec}, ...
               {fx2, [x1; x2], [d1], d_rec}, ...
               {fx3, [x1; x2], [d1], d_rec}, ...
