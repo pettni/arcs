@@ -1,4 +1,4 @@
-function result = is_trans_nlin(rec1, rec2, dyn, deg)
+function result = is_trans_nlin(rec1, rec2, dyn, drec, deg)
   % is_trans_nlin(rec1, rec2, dyn): Return false if a certificate that 
   % guarantees the non-existence of a flow from rec1 to rec2 under 
   % nonlinear dynamics dyn is found, true otherwise
@@ -6,6 +6,7 @@ function result = is_trans_nlin(rec1, rec2, dyn, deg)
   % Inputs 
   %   - rec1, rec2: sets
   %   - dyn = {fx, vars, drec}: dynamics \dot x = fx(x,d), d \in drec
+  %   - drec: disturbance Rec
   %   - deg: relaxation order for moment hierarchy
 
   global ops;
@@ -13,7 +14,7 @@ function result = is_trans_nlin(rec1, rec2, dyn, deg)
 
   fx = dyn{1};
   vars = dyn{2};
-  drec = dyn{3};
+
   if isempty(drec)
     drec = Rec(zeros(0,2));
   end

@@ -21,6 +21,13 @@ classdef Polynomial<handle
     function p = Polynomial(arg1, arg2)
       if nargin > 1 && isa(arg2, 'sdpvar')
         % sdpvar case
+        if length(arg1) > 1
+          p = [Polynomial(arg1(1), arg2)];
+          for i=2:length(arg1)
+            p(end+1) = Polynomial(arg1(i), arg2);
+          end
+          return
+        end
         [coef, mono_text] = coefficients(arg1);
         p.coef = coef;
         p.mons = zeros(length(arg2), length(coef));
@@ -77,6 +84,13 @@ classdef Polynomial<handle
 
     function ret = deg(p)
       % return the degree
+      if length(p) > 1
+        ret = 0;
+        for i = 1:length(p)
+          ret = max(ret, p(i).deg);
+        end
+        return
+      end
       ret = max(sum(p.mons, 1));
     end
 
@@ -108,6 +122,10 @@ classdef Polynomial<handle
     end
 
     function disp(p)
+      if length(p) > 1
+        disp('Vector of Polynomial')
+        return
+      end
       disp(['Polynomial in ', num2str(p.dim), ' variables:'])
       str = cell(1, length(p.coef));
       for i = 1:length(p.coef)

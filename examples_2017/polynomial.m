@@ -4,16 +4,22 @@ yalmip clear;
 global ops
 ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
 
+global opt_settings
+opt_settings.mode = 'sdsos';
+opt_settings.max_deg = 4;
+
 domain = Rec([-2 -1.5; 2 3]);
 goal_set = Rec([-1 0.5; -0.2 1.8], {'goal'});
 unsafe_set = Rec([-2 -1.5; -.5 -1], {'unsafe'});
 
 maxiter = 80;
 show_plot = 0;
-% use_pgs = 0;
-% disturbance = 0;
+use_pgs = 1;
+disturbance = 0.5;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+tic
 
 % Build initial partition
 part = Partition(domain);
@@ -33,10 +39,7 @@ if ~disturbance
   fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
       -10+x1];
 
-  dyn_list = {{fx1, [x1; x2]}, ...
-            {fx2, [x1; x2]}, ...
-            {fx3, [x1; x2]}, ...
-            {fx4, [x1; x2]}};
+  part.abstract({fx1, fx2, fx3, fx4}, [x1; x2]);
 else
   fx1 = [-x2-0.5*x1^3-1.5*x1;...
       -x2^2+2+x1+d1];
@@ -47,21 +50,9 @@ else
   fx4 = [-x2-0.5*x1^3-1.5*x1-1.5;...
       -10+x1+d1];
 
-  d_rec = Rec([-0.1, 0.1]);
-  dyn_list = {{fx1, [x1; x2], [d1], d_rec}, ...
-              {fx2, [x1; x2], [d1], d_rec}, ...
-              {fx3, [x1; x2], [d1], d_rec}, ...
-              {fx4, [x1; x2], [d1], d_rec}};
+  d_rec = Rec([-disturbance, disturbance]);
+  part.abstract({fx1, fx2, fx3, fx4}, [x1; x2; d1], d_rec);
 end
-
-% Create transition system
-part.create_ts();
-
-% Add modes
-part.add_mode(dyn_list{1})
-part.add_mode(dyn_list{2});
-part.add_mode(dyn_list{3});
-part.add_mode(dyn_list{4});
 
 % Disable progress groups
 if ~use_pgs
@@ -71,9 +62,12 @@ else
   part.search_trans_reg(3);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%
+% SYNTHESIS-REFINEMENT %
+%%%%%%%%%%%%%%%%%%%%%%%%
+
 Win = [];
 iter = 0;
-tic
 while true
 
   U = part.get_cells_with_ap({'unsafe'});

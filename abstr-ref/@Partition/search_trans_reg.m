@@ -35,7 +35,7 @@ function [] = search_trans_reg(part, search_depth)
     for U_size = length(U):-1:1
       for Up = nchoosek(U, U_size)'
         if ~part.has_superior_trans_reg(Up, search_set)
-          if is_transient(search_set, part.act_list(Up'))
+          if is_transient(search_set, part.dyn_list(Up'), part.d_rec)
             part.trans_reg_U{end+1} = Up;
             part.trans_reg_rec{end+1} = search_set;
           end 

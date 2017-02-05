@@ -1,13 +1,18 @@
-function result = is_trans_lin(rec1, rec2, dyn)
-  % is_trans_lin(rec1, rec2, dyn): Return false if a certificate that 
+function result = is_trans_lin(rec1, rec2, dyn, drec)
+  % is_trans_lin(rec1, rec2, dyn, drec): Return false if a certificate that 
   % guarantees the non-existence of a flow from rec1 to rec2 under 
   % linear dynamics dyn is found, true otherwise
   % 
   % Inputs:
   %   - rec1, rec2: sets
-  %   - dyn = {A, K, (E, drec)}: dynamics \dot x = Ax + K + Ed, d \in drec
+  %   - dyn = {A, K, E}: dynamics \dot x = Ax + K + Ed, d \in drec
+  %   - drec: disturbance Rec
 
   isect_rec = intersect(rec1,rec2);
+
+  if nargin < 4 || isempty(drec)
+    drec = Rec(zeros(2,0));
+  end
 
   % overlapping
   if isect_rec.isFullDim
@@ -44,8 +49,8 @@ function result = is_trans_lin(rec1, rec2, dyn)
       end
     else
       % there is disturbance
-      for j = 1:2^length(dyn{4}.getFullDims)
-        d_vert = dyn{4}.getVertexI(j);
+      for j = 1:2^length(drec.getFullDims)
+        d_vert = drec.getVertexI(j);
         if h1*(dyn{1}*x_vert' + ...
                dyn{2} + ...
                dyn{3}*d_vert') > 0

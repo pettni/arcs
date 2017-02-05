@@ -9,8 +9,8 @@ function test_trans1(testCase)
 	K = [1; 0];
 
 	x = sdpvar(2,1);
-	verifyEqual(testCase, is_trans_nlin(r1, r2, {A*x + K, x, []}, 4), true);
-	verifyEqual(testCase, is_trans_nlin(r2, r1, {A*x + K, x, []}, 4), false);
+	verifyEqual(testCase, is_trans_nlin(r1, r2, {A*x + K, x}, [], 4), true);
+	verifyEqual(testCase, is_trans_nlin(r2, r1, {A*x + K, x}, [], 4), false);
 end
 
 function test_trans12(testCase)
@@ -24,8 +24,8 @@ function test_trans12(testCase)
 
   x = sdpvar(2,1);
   d = sdpvar(1,1);
-  verifyEqual(testCase, is_trans_nlin(r1, r2, {A*x + K, x, []}, 4), false);
-  verifyEqual(testCase, is_trans_nlin(r2, r1, {A*x + E*d + K, [x; d], drec}, 4), true);
+  verifyEqual(testCase, is_trans_nlin(r1, r2, {A*x + K, x}, [], 4), false);
+  verifyEqual(testCase, is_trans_nlin(r2, r1, {A*x + E*d + K, [x; d]}, drec, 4), true);
 end
 
 function test_nonl(testCase)
@@ -35,12 +35,12 @@ function test_nonl(testCase)
   f = [-x-y^2+1; x*y-y];
   r1 = Rec([-1 0; 0 0.8]);
   r2 = Rec([0 0; 1 0.8]);
-  verifyEqual(testCase, is_trans_nlin(r1, r2, {f, [x; y], []}, 4), true);
-  verifyEqual(testCase, is_trans_nlin(r2, r1, {f, [x; y], []}, 4), false);
+  verifyEqual(testCase, is_trans_nlin(r1, r2, {f, [x; y]}, [], 4), true);
+  verifyEqual(testCase, is_trans_nlin(r2, r1, {f, [x; y]}, [], 4), false);
 
   r1 = Rec([-1 0; 0 1.2]);
   r2 = Rec([0 0; 1 1.2]);
-  verifyEqual(testCase, is_trans_nlin(r2, r1, {f, [x; y], []}, 4), true);
+  verifyEqual(testCase, is_trans_nlin(r2, r1, {f, [x; y]}, [], 4), true);
 
 end
 

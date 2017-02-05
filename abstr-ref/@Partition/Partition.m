@@ -6,7 +6,8 @@ classdef Partition<handle
     domain;  % Domain
     adjacency; % Sparse matrix containing adjacency information
     adjacency_outside; % Which cells are at the boundary of the domain?
-    act_list  % list of added modes
+    dyn_list  % list of added modes
+    d_rec     % disturbance set
     trans_reg_U; % list of transient regions
     trans_reg_rec;
   end
@@ -22,9 +23,10 @@ classdef Partition<handle
       r.domain = domain;
       r.cell_list = [domain];
       r.adjacency = [];
-      r.act_list = {};
+      r.dyn_list = {};
       r.trans_reg_U = {};
       r.trans_reg_rec = {};
+      r.d_rec = [];
     end
 
     function add_area(part, area)

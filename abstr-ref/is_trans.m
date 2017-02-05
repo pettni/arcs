@@ -1,16 +1,14 @@
-function [res] = is_trans(rec1, rec2, dyn)
+function [res] = is_trans(rec1, rec2, dyn, drec)
   % is_trans: determine if there is a transition from rec1 to rec2
-  % under mode dyn
-
-  global opt_mode
+  % under mode dyn = {A, K, E}  (linear)
+  %                = {fx, vars} (yalmip-sos)
+  %                = pol        (Polynomial-sdsos)
+  global opt_settings
   
-  if ~strcmp(class(dyn{2}), 'sdpvar')
-    % Linear
-    res = is_trans_lin(rec1, rec2, dyn);
-  else
-    if strcmp(opt_settings.mode, 'sos')
-      res = is_trans_nlin(rec1, rec2, dyn, opt_settings.max_deg);
-    elseif strcmp(opt_settings.mode, 'sdsos')
-      res = is_trans_nlin_sdsos(rec1, rec2, dyn, opt_settings.max_deg);
-    end
+  if isa(dyn, 'cell') && isa(dyn{1}, 'double')
+    res = is_trans_lin(rec1, rec2, dyn, drec);
+  elseif isa(dyn, 'cell') && isa(dyn{1}, 'sdpvar')
+    res = is_trans_nlin(rec1, rec2, dyn, drec, opt_settings.max_deg);
+  elseif isa(dyn, 'Polynomial')
+    res = is_trans_nlin_sdsos(rec1, rec2, dyn, drec, opt_settings.max_deg);
   end

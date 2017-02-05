@@ -1,6 +1,10 @@
 clear all;
 global ops
+global opt_settings
 ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
+
+opt_settings.mode = 'sdsos';
+opt_settings.max_deg = 4;
 
 maxiter = 1000;
 split_inv = true;   % to avoid zeno
@@ -9,18 +13,24 @@ goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
 
 % Disturbance: unit is W/m^2 --- heat added per unit floor area
 dmax = 0.;
+xvar = sdpvar(3,1);
+dvar = sdpvar(2,1);
 d_rec = Rec([-dmax -dmax; dmax dmax]);
 
 cd radiant_data
-  if true
+  if false
     [a1 k1 e1 a2 k2 e2] = radiant_dyn();
-    act_set = {{a1, k1, e1, d_rec}, {a2, k2, e1, d_rec}};
   else
     load a1; load a2; load b1; load b2
     b1(3) = b1(3)/10;
     b2(3) = b2(3)/10;
-    act_set = {{a1, b1}, {a2, b2}};
+    k1 = b1;
+    k2 = b2;
+    e1 = zeros(3,2);
+    e2 = zeros(3,2);
   end
+  fx1 = a1 * xvar + k1 + e1 * dvar;
+  fx2 = a2 * xvar + k2 + e2 * dvar;
 cd ..
 
 tic
@@ -30,13 +40,11 @@ part = Partition(Rec([20 28; 20 28; 20 28]));
 part.add_area(goal_set);
 part.check();   % sanity check
 
-% Build transition system
-part.create_ts();
-part.add_mode(act_set{1});
-part.add_mode(act_set{2});
+% Create abstraction
+part.abstract({fx1, fx2}, [xvar; dvar], d_rec);
 
 % Search for transient regions
-part.search_trans_reg(3);
+part.search_trans_reg(2);
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 % SYNTHESIS-REFINEMENT %

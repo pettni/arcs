@@ -11,10 +11,12 @@ function test_transient1(testCase)
   A2 = [0 0; 0 0];
   K2 = [0; 1];
 
-  dyn_list = {{A1, K1}, {A2, K2}};
+  dyn_list = {{A1, K1, []}, {A2, K2, []}};
 
   verifyEqual(testCase, is_transient_lin(r, dyn_list{1}), true);
   verifyEqual(testCase, is_transient_lin(r, dyn_list{2}), true);
+  verifyEqual(testCase, is_transient(r, dyn_list, []), true);
+
 end
 
 function test_transient2(testCase)
@@ -24,10 +26,11 @@ function test_transient2(testCase)
   A2 = [0 0; 0 0];
   K2 = [-1; 0];
 
-  dyn_list = {{A1, K1}, {A2, K2}};
+  dyn_list = {{A1, K1, []}, {A2, K2, []}};
 
   verifyEqual(testCase, is_transient_lin(r, dyn_list{1}), true);
   verifyEqual(testCase, is_transient_lin(r, dyn_list{2}), true);
+  verifyEqual(testCase, is_transient(r, dyn_list, []), false);
 end
 
 function test_transient3(testCase)
@@ -37,10 +40,11 @@ function test_transient3(testCase)
   A2 = [-1 0 0; 0 -1 0; 0 0 -1];
   K2 = [0; 0; 0.1];
 
-  dyn_list = {{A1, K1}, {A2, K2}};
+  dyn_list = {{A1, K1, []}, {A2, K2, []}};
 
   verifyEqual(testCase, is_transient_lin(r, dyn_list{1}), false);
   verifyEqual(testCase, is_transient_lin(r, dyn_list{2}), false);
+  verifyEqual(testCase, is_transient(r, dyn_list, []), false);
 end
 
 function test_radiant1(testCase)
@@ -64,6 +68,7 @@ function test_radiant1(testCase)
 
   verifyEqual(testCase, is_transient_lin(r, {A1, K1}), true);
   verifyEqual(testCase, is_transient_lin(r, {A2, K2}), true);
+  verifyEqual(testCase, is_transient(r, {{A1, K1, []}, {A2, K2, []}}, []), false);
 end
 
 function test_radiant2(testCase)
@@ -98,11 +103,14 @@ function test_disturbance(testCase)
   drec = Rec([-1.1, 1.1]);
 
   verifyEqual(testCase, is_transient_lin(r, {A, B}), true);
-  verifyEqual(testCase, is_transient_lin(r, {A, B, E, drec}), false);
+  verifyEqual(testCase, is_transient_lin(r, {A, B, E}, drec), false);
 
 end
 
 function setupOnce(testCase)  % do not change function name
   global ops
   ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
+  global opt_settings
+  opt_settings.mode = 'sdsos'
+  opt_settings.max_deg = 4;
 end

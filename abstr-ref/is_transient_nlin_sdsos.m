@@ -6,7 +6,6 @@ function result = is_transient_nlin_sdsos(rec1, dyn_list, drec, tot_deg)
   epsilon = 1;
 
   M = length(dyn_list);  % number of modes
-
   deg_f = 0;
   for m = 1:M
     deg_f = max([deg_f, dyn_list{m}.deg]);

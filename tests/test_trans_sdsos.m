@@ -12,8 +12,8 @@ function test_trans1(testCase)
 
     fx = Polynomial(A*x + K, x);
 
-    verifyEqual(testCase, is_trans_nlin_sdsos(r1, r2, {fx, []}, 4), true);
-    verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, {fx, []}, 4), false);
+    verifyEqual(testCase, is_trans_nlin_sdsos(r1, r2, fx, [], 4), true);
+    verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, fx, [], 4), false);
 end
 
 function test_trans12(testCase)
@@ -31,8 +31,8 @@ function test_trans12(testCase)
   fx1 = Polynomial(A*x + K, [x]);
   fx2 = Polynomial(A*x + E*d + K, [x;d]);
 
-  verifyEqual(testCase, is_trans_nlin_sdsos(r1, r2, {fx1, []}, 4), false);
-  verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, {fx2, drec}, 4), true);
+  verifyEqual(testCase, is_trans_nlin_sdsos(r1, r2, fx1, [], 4), false);
+  verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, fx2, drec, 4), true);
 end
 
 function test_nonl(testCase)
@@ -45,12 +45,12 @@ function test_nonl(testCase)
 
   fx = Polynomial(f, [x; y]);
 
-  verifyEqual(testCase, is_trans_nlin_sdsos(r1, r2, {fx, []}, 4), true);
-  verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, {fx, []}, 4), false);
+  verifyEqual(testCase, is_trans_nlin_sdsos(r1, r2, fx, [], 4), true);
+  verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, fx, [], 4), false);
 
   r1 = Rec([-1 0; 0 1.2]);
   r2 = Rec([0 0; 1 1.2]);
-  verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, {fx, []}, 4), true);
+  verifyEqual(testCase, is_trans_nlin_sdsos(r2, r1, fx, [], 4), true);
 
 end
 

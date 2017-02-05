@@ -1,12 +1,12 @@
-function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
+function result = is_trans_nlin_sdsos(rec1, rec2, fx, drec, tot_deg)
   % is_trans_nlin(rec1, rec2, dyn): Return false if a certificate that 
   % guarantees the non-existence of a flow from rec1 to rec2 under 
   % nonlinear dynamics dyn is found, true otherwise
   % 
   % Inputs 
-  %   - rec1, rec2: sets
-  %   - dyn = {fx, drec}: dynamics \dot x = fx(x,d), d \in drec
-  %   - tot_deg: relaxation order for moment hierarchy
+  %   - Rec rec1, rec2: sets
+  %   - Polynomial fx: dynamics \dot x = fx(x,d), d \in drec
+  %   - double tot_deg: relaxation order for moment hierarchy
 
   result = true;
 
@@ -24,8 +24,6 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
     return;
   end
 
-  fx = dyn{1};
-  drec = dyn{2};
   if isempty(drec)
     drec = Rec(zeros(0,2));
   end

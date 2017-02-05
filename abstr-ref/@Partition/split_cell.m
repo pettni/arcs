@@ -136,12 +136,12 @@ function [ind1, ind2] = split_cell(part, ind, dim)
     in_act = trans_in_act(i);
     if is_trans(part.cell_list(in_state), ...
                 part.cell_list(ind1), ...
-                part.act_list{in_act})
+                part.dyn_list{in_act}, part.d_rec)
       part.ts.add_transition(in_state, ind1, in_act);
     end
     if is_trans(part.cell_list(in_state), ...
                 part.cell_list(ind2), ...
-                part.act_list{in_act})
+                part.dyn_list{in_act}, part.d_rec)
       part.ts.add_transition(in_state, ind2, in_act);
     end
   end
@@ -152,26 +152,26 @@ function [ind1, ind2] = split_cell(part, ind, dim)
     out_act = trans_out_act(i);
     if is_trans(part.cell_list(ind1), ...
                 part.cell_list(out_state), ...
-                part.act_list{out_act})
+                part.dyn_list{out_act}, part.d_rec)
       part.ts.add_transition(ind1, out_state, out_act);
     end
     if is_trans(part.cell_list(ind2), ...
                 part.cell_list(out_state), ...
-                part.act_list{out_act})
+                part.dyn_list{out_act}, part.d_rec)
       part.ts.add_transition(ind2, out_state, out_act);
     end
   end
 
   % Transitions between the two cells
-  for act_num = 1:length(part.act_list)
+  for act_num = 1:length(part.dyn_list)
     if is_trans(part.cell_list(ind1), ...
                 part.cell_list(ind2), ...
-                part.act_list{act_num})
+                part.dyn_list{act_num}, part.d_rec)
       part.ts.add_transition(ind1, ind2, act_num);
     end
     if is_trans(part.cell_list(ind2), ...
                 part.cell_list(ind1), ...
-                part.act_list{act_num})
+                part.dyn_list{act_num}, part.d_rec)
       part.ts.add_transition(ind2, ind1, act_num);
     end
   end
@@ -181,12 +181,12 @@ function [ind1, ind2] = split_cell(part, ind, dim)
     out_act = outdomain_act(i);
     if is_trans_out(part.cell_list(ind1), ...
                     part.domain, ...
-                    part.act_list{out_act})
+                    part.dyn_list{out_act}, part.d_rec)
       part.ts.add_transition(ind1, N+2, out_act);
     end
     if is_trans_out(part.cell_list(ind2), ...
                     part.domain, ...
-                    part.act_list{out_act})
+                    part.dyn_list{out_act}, part.d_rec)
       part.ts.add_transition(ind2, N+2, out_act);
     end
   end
@@ -195,11 +195,11 @@ function [ind1, ind2] = split_cell(part, ind, dim)
   for i = 1:length(non_transient_act)
     nt_act = non_transient_act(i);
     if ~is_transient(part.cell_list(ind1), ...
-                     {part.act_list{nt_act}})
+                     {part.dyn_list{nt_act}}, part.d_rec)
       part.ts.add_transition(ind1, ind1, nt_act);
     end
     if ~is_transient(part.cell_list(ind2), ...
-                     {part.act_list{nt_act}})
+                     {part.dyn_list{nt_act}}, part.d_rec)
       part.ts.add_transition(ind2, ind2, nt_act);
     end
   end
