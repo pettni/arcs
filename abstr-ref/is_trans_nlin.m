@@ -5,11 +5,18 @@ function result = is_trans_nlin(rec1, rec2, dyn, deg)
   % 
   % Inputs 
   %   - rec1, rec2: sets
-  %   - dyn = {fx, x, (d, drec)}: dynamics \dot x = fx(x,d), d \in drec
+  %   - dyn = {fx, vars, drec}: dynamics \dot x = fx(x,d), d \in drec
   %   - deg: relaxation order for moment hierarchy
 
   global ops;
   result = true;
+
+  fx = dyn{1};
+  vars = dyn{2};
+  drec = dyn{3};
+  if isempty(drec)
+    drec = Rec(zeros(0,2));
+  end
 
   irec = intersect(rec1,rec2);
   % overlapping
@@ -36,13 +43,10 @@ function result = is_trans_nlin(rec1, rec2, dyn, deg)
 	% h1 normal vector
 
 	obj = -h1*dyn{1};
-	F = [irec.xmin' <= dyn{2}, dyn{2} <= irec.xmax'];
-	if length(dyn) > 2
-		% Disturbance
-		dvar = dyn{3};
-		drec = dyn{4};
-		F = [F, drec.xmin' <= dvar, dvar <= drec.xmax'];
-	end
+  
+  % Combined bounds
+  crec = irec * drec;
+	F = [crec.xmin' <= vars, vars <= crec.xmax'];
 
 	diagnosis = solvemoment(F, obj, ops, deg);
 	if (diagnosis.problem==0 || diagnosis.problem==4) & value(obj)>0

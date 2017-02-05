@@ -1,33 +1,30 @@
-function result = is_transient_nlin_sdsos(rec1, dyn_list, tot_deg)
+function result = is_transient_nlin_sdsos(rec1, dyn_list, drec, tot_deg)
   % Determine if the modes dyn_list = {fx1, fx2, ...}, where
-  % fx = {f, xvar, (dvar, drec)} is transient on rec1 using 
+  % fxi is a vector of Polynomial, is transient on rec1 using 
   % relaxation order tot_deg
   %
-  % Limitation: in multi-case, assumes dyn's with the same disturbance 
-  % variables have matching disturbance bounds
   epsilon = 1;
 
   M = length(dyn_list);  % number of modes
-  x_var = dyn_list{1}{2};
-  d_var = [];
-  d_recs = [];
-  deg_f = 0;
 
-  all_d_rec = Rec(zeros(2,0));
+  deg_f = 0;
   for m = 1:M
-    if length(dyn_list{m}) > 2
-      d_var = [d_var; dyn_list{m}{3}];
-      all_d_rec = all_d_rec * dyn_list{m}{4};
-    end
-    deg_f = max(deg_f, degree(dyn_list{m}{1}));
+    deg_f = max([deg_f, dyn_list{m}.deg]);
   end
 
-  [d_var, idx] = unique(d_var);
-  all_rec = rec1 * Rec([all_d_rec.xmin(idx); all_d_rec.xmax(idx)]);
-  all_var = [x_var; d_var];
+  if isempty(drec)
+    % No disturbance
+    drec = Rec(zeros(2,0));
+  end
 
-  n_x = length(x_var);
-  n_d = length(d_var);
+  all_rec = rec1 * drec;
+
+  n_x = rec1.dim;
+  n_d = drec.dim;
+
+  if n_x+n_d ~= all_rec.dim
+    error('dimension mismatch')
+  end
 
   % For all m: -d B . f_m (x,d) - eps - \sum_i sji(x,d) gji(x,d)  >= 0 
   % Overall equation is in vars x,d and degree tot_deg
@@ -68,7 +65,7 @@ function result = is_transient_nlin_sdsos(rec1, dyn_list, tot_deg)
   for m = 1:M
     T_dB = PolyLinTrans(n_x, n_x+n_d, deg_B, tot_deg);
     for j = 1:n_x
-      fm_j = Polynomial(dyn_list{m}{1}(j), all_var);
+      fm_j = dyn_list{m}(j);
 
       % Get fm_j( x^- + (x^+ - x^-) x ) / (x_j^+ - x_j^-)
       fm_j_s = fm_j.shift(all_rec.xmin).scale(all_rec.xmax - all_rec.xmin) / ...

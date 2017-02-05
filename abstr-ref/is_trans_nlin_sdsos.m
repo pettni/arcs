@@ -5,7 +5,7 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
   % 
   % Inputs 
   %   - rec1, rec2: sets
-  %   - dyn = {fx, x, (d, drec)}: dynamics \dot x = fx(x,d), d \in drec
+  %   - dyn = {fx, drec}: dynamics \dot x = fx(x,d), d \in drec
   %   - tot_deg: relaxation order for moment hierarchy
 
   result = true;
@@ -13,7 +13,7 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
   irec = intersect(rec1,rec2);
   % overlapping
   if irec.isFullDim
-    warning('isTransLinRec: was called with overlapping Recs - returning true');
+    warning('is_trans_nlin_sdsos: was called with overlapping Recs - returning true');
     result = true;
     return;
   end
@@ -24,32 +24,27 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
     return;
   end
 
+  fx = dyn{1};
+  drec = dyn{2};
+  if isempty(drec)
+    drec = Rec(zeros(0,2));
+  end
 
   % find "flat" dimension
   flatdim = irec.getFlatDims;
-  h1 = zeros(1, length(dyn{1}));
   if rec1.xmax(flatdim)==rec2.xmin(flatdim)
     flatdim_val = rec1.xmax(flatdim);
-    h1(flatdim)=1;
+    obj = fx(flatdim);
   else
     flatdim_val = rec1.xmin(flatdim);
-    h1(flatdim)=-1;
+    obj = -fx(flatdim);
   end 
 
-  if length(dyn) > 2
-    % Disturbance
-    obj = Polynomial(h1*dyn{1}, [dyn{2}; dyn{3}]);  
-    all_rec = irec.elvar(flatdim) * dyn{4};   % (x,d) \in X\{xi} \times D = all_rec
-    pre_dim = length(dyn{2}) + length(dyn{3});
-    red_dim = pre_dim - 1;
-  else
-    obj = Polynomial(h1*dyn{1}, dyn{2});
-    all_rec = irec.elvar(flatdim);   % x \in X\{xi} = all_rec
-    pre_dim = length(dyn{2});
-    red_dim = pre_dim - 1;
-  end
+  all_rec = irec.elvar(flatdim) * drec;
+  red_dim = all_rec.dim;
 
-  T_el = PolyLinTrans.elvar(pre_dim, obj.deg, flatdim, flatdim_val);
+  % Reduce dimension by eliminating flatdim
+  T_el = PolyLinTrans.elvar(red_dim + 1, obj.deg, flatdim, flatdim_val);
   obj_red = T_el * obj;
 
   % Set up optimization problem
@@ -62,7 +57,7 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
 
   sigma_deg = tot_deg - 2;   % degree of all g's is 2
 
-  Ag = PolyLinTrans.eye(1, red_dim, 0, tot_deg).as_vector_trans;
+  Ag = PolyLinTrans.eye(red_dim, red_dim, 0, tot_deg).as_vector_trans;
   Ak = PolyLinTrans.eye(red_dim, red_dim, tot_deg, tot_deg).as_matrix_trans;
 
   n_g = 1;
@@ -70,7 +65,6 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
 
   Asi = cell(1, all_rec.dim);
   nsi = zeros(1, all_rec.dim);
-
   for i = 1:all_rec.dim
     g = all_rec.bounding_polynomial(i);
     Asi{i} = PolyLinTrans.mul_pol(all_rec.dim, sigma_deg, tot_deg, g).as_matrix_trans;

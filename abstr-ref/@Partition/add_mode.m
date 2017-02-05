@@ -1,34 +1,47 @@
-function add_mode(part, fx)
-	% create_ts: add fxion corresponding to a dynamical mode
+function add_mode(part, fx, vars, drec)
+	% create_ts: add action corresponding to a dynamical mode 'fx'
 	%
-	% Linear dynamics:      \dot x = A x + K + E d
 	% Polynomial dynamics:  \dot x = f(x, d), f polynomial
-	%                                d \in dist_rec
+	%                                d \in drec
   % Input:
-	%   fx = {A, K, E, dist_rec}  in the linear case (last two optional)
-	%   fx = {f, vars, dist_rec}, f is an sdpvar vector in variables 'vars'
+	%   fx : sdpvar vector in variables 'vars'
+  %   drec : bound on disturbance variables (must be at the end of vars)
   %
 
+  global opt_settings
+
+  if nargin < 4
+    drec = [];
+  end
+
   act_n = part.ts.add_action();
-  part.act_list{act_n} = fx;
+
+  if strcmp(opt_settings.mode, 'sdsos')
+    % Convert to Polynomial
+    part.dyn_list{act_n} = {Polynomial(fx, vars), drec};
+  elseif strcmp(opt_settings.mode, 'sos')
+    part.dyn_list{act_n} = {fx, vars, drec};
+  else
+    error('opt_settings.mode must be sdsos or sos')
+  end
 
   % Figure out transitions
   for i=1:length(part)
     % Neighbor transitions
     adj = part.get_neighbors(i);
     for j=adj
-      if is_trans(part.cell_list(i), part.cell_list(j), fx)
+      if is_trans(part.cell_list(i), part.cell_list(j), part.dyn_list{act_n})
         part.ts.add_transition(i, j, act_n);
       end
     end
 
     % Out-of-domain
-    if is_trans_out(part.cell_list(i), part.domain, fx)
+    if is_trans_out(part.cell_list(i), part.domain, part.dyn_list{act_n})
       part.ts.add_transition(i, length(part)+1, act_n);
     end
 
     % Self transitions
-    if ~is_transient(part.cell_list(i), {fx})
+    if ~is_transient(part.cell_list(i), {part.dyn_list{act_n}})
       part.ts.add_transition(i, i, act_n);
     end
   end
