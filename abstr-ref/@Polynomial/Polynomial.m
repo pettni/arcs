@@ -44,7 +44,6 @@ classdef Polynomial<handle
         p.coef = arg1;
         p.mons = arg2;
       end
-      p.reduce;
     end
 
     function reduce(p)
@@ -69,14 +68,6 @@ classdef Polynomial<handle
       end
       p.mons = p.mons(:, abs(p.coef) > eps);
       p.coef = p.coef(:, abs(p.coef) > eps);
-    end
-
-    function add_term(p, coef, mon)
-      % Add a term to the monomial
-      p.coef(end+1) = coef;
-      p.mons(:, end+1) = mon;
-
-      p.reduce;
     end
 
     function ret = dim(p)
@@ -148,13 +139,15 @@ classdef Polynomial<handle
       if isa(p2, 'Polynomial')
         for i = 1:length(p1.coef)
           for j = 1:length(p2.coef)
-            ret.add_term(p1.coef(i) * p2.coef(j), p1.mons(:,i) + p2.mons(:,j))
+            ret.coef(end+1) = p1.coef(i) * p2.coef(j);
+            ret.mons(:, end+1) = p1.mons(:,i) + p2.mons(:,j);
           end
         end
       else
         ret.coef = p2 * p1.coef;
         ret.mons = p1.mons;
       end
+      ret.reduce;
     end
 
     function q = shift(p, xs)
@@ -164,20 +157,16 @@ classdef Polynomial<handle
       for term = 1:length(p.coef)
         q_i = Polynomial(p.dim, [1]);
         for j = 1:p.dim
-          q_ij = Polynomial(p.dim);
           alpha_ij = p.mons(j, term);
-          for k = 0:alpha_ij
-            q_ijk = Polynomial(p.dim);
-            q_ijk.coef = nchoosek(alpha_ij, k) * xs(j)^(alpha_ij-k);
-            new_mon = zeros(p.dim,1);
-            new_mon(j) = k;
-            q_ijk.mons = new_mon;
-            q_ij = q_ij + q_ijk;
-          end
+          q_ij = Polynomial(p.dim);
+          q_ij.coef = arrayfun(@(k) nchoosek(alpha_ij,k), 0:alpha_ij).*(xs(j).^(alpha_ij:-1:0));
+          q_ij.mons = zeros(p.dim, alpha_ij+1);
+          q_ij.mons(j, :) = 0:alpha_ij;
           q_i = q_i * q_ij;
         end
         q = q + q_i * p.coef(term);
       end
+      q.reduce;
     end
 
     function q = mrdivide(p, d)
@@ -199,13 +188,17 @@ classdef Polynomial<handle
     end
 
     function res = eq(p1, p2)
-      p1.reduce;  % sorts
-      p2.reduce;  % sorts
       if length(p1.coef) ~= length(p2.coef)
         res = false;
         return
       end
-      res = norm([p1.coef p2.coef; p1.mons p2.mons]) < 1e-5;
+      p1.reduce;  % sorts
+      p2.reduce;  % sorts
+      res = norm(p1.coef-p2.coef) < 1e-5 && all(all(p1.mons == p2.mons));
+    end
+
+    function res = isequal(p1, p2)
+      res = p1 == p2;
     end
 
   end
