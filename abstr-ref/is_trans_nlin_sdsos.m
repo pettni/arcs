@@ -8,7 +8,6 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
   %   - dyn = {fx, x, (d, drec)}: dynamics \dot x = fx(x,d), d \in drec
   %   - tot_deg: relaxation order for moment hierarchy
 
-  global ops;
   result = true;
 
   irec = intersect(rec1,rec2);
@@ -54,7 +53,6 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
   obj_red = T_el * obj;
 
   % Set up optimization problem
-  [r, res] = mosekopt('symbcon echo(0)'); 
   prob = []; 
 
   % Basic constraint:
@@ -70,13 +68,13 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
   n_g = 1;
   n_k = size(Ak, 2);
 
-  Asi = {};
-  nsi = [];
+  Asi = cell(1, all_rec.dim);
+  nsi = zeros(1, all_rec.dim);
 
   for i = 1:all_rec.dim
     g = all_rec.bounding_polynomial(i);
-    Asi{end+1} = PolyLinTrans.mul_pol(all_rec.dim, sigma_deg, tot_deg, g).as_matrix_trans;
-    nsi(end+1) = size(Asi{end},2);
+    Asi{i} = PolyLinTrans.mul_pol(all_rec.dim, sigma_deg, tot_deg, g).as_matrix_trans;
+    nsi(i) = size(Asi{i}, 2);
   end
 
   % Add [Ag   -Ak   -As1 -As2 ... -Asn] =   [obj];
@@ -99,7 +97,7 @@ function result = is_trans_nlin_sdsos(rec1, rec2, dyn, tot_deg)
   prob.c(1) = 1;
 
   % Optimize
-  [r, res] = mosekopt('minimize echo(0)', prob); 
+  [~, res] = mosekopt('minimize echo(0)', prob); 
 
   gamma_opt = res.sol.itr.xx(1);
 

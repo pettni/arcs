@@ -11,7 +11,9 @@ Toolbox in development for incremental synthesis of correct-by-construction swit
 ## Requirements
 
  - Matlab 2015b or newer. Older versions work if the calls to ```builtin('_ismemberhelper',aPost,X)``` in ```pre.m``` are replaced with ```ismember(aPost, X)```, but this will be slower.
- - Yalmip is required for semidefinite optimization, tested version R20160930.
+ - Yalmip and a supported solver is required for semidefinite optimization, tested version R20160930.
+ - [Mosek](https://mosek.com) for conic optimization, tested with version 8.
+ - [arrow.m](https://www.mathworks.com/matlabcentral/fileexchange/278-arrow) for certain plotting.
 
 ## Usage
 
@@ -19,7 +21,8 @@ Add the folder ```abstr-ref``` to the Matlab path: ```addpath /path/to/abstr-ref
 
 Run tests:
 ```
-run(tests)
+cd tests/
+runtests
 ```
 Run an example:
 ```

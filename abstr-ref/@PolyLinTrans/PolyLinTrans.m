@@ -129,6 +129,20 @@ classdef PolyLinTrans<handle
       end
     end
 
+    function disp(plt, all) 
+      if nargin < 2
+        all = false;
+      end
+      disp(['Polynomial transformation P(', num2str(plt.n0), ',', num2str(plt.d0), ') --> P(', num2str(plt.n1), ',', num2str(plt.d1), ')'])
+      [row,col,val] = find(plt.data);
+      if all
+        for i = 1:length(row)
+          from = mono_unrank_grlex(plt.n0, row(i));
+          to = mono_unrank_grlex(plt.n1, col(i));
+          disp(['x^(', num2str(from'), ') |--> ', num2str(val(i)), ' * x^(', num2str(to'), ')']);
+        end
+      end
+    end
   end
 
   methods (Static)
@@ -139,10 +153,16 @@ classdef PolyLinTrans<handle
         error('eye requires n1 >= n0')
       end
       plt = PolyLinTrans(n0, n1, d0, d1);
-      for i = 1:count_monomials_leq(n0, d0)
-        idx_1 = mono_unrank_grlex(n0, i);
-        j = mono_rank_grlex(n1, [idx_1; zeros(n1-n0, 1)]);
-        plt.data(i, j) = 1.;
+      if n0 == n1
+        for i = 1:count_monomials_leq(n0, d0)
+          plt.data(i, i) = 1.;
+        end
+      else
+        for i = 1:count_monomials_leq(n0, d0)
+          idx_1 = mono_unrank_grlex(n0, i);
+          j = mono_rank_grlex(n1, [idx_1; zeros(n1-n0, 1)]);
+          plt.data(i, j) = 1.;
+        end
       end
     end
 
@@ -190,14 +210,16 @@ classdef PolyLinTrans<handle
         error('degree too low')
       end
 
+      q.reduce();  % get rid of redundant terms
+
       plt = PolyLinTrans(n, n, d0, d1);
-      for j = 1:size(q.mons, 2)
+      for j = 1:size(q.mons, 2)  % for each term
         grlex_i = zeros(n, 1);
-        while sum(grlex_i) <= d0
-          grlex_j = grlex_i + q.mons(:, j);
-          plt.data(mono_rank_grlex(n, grlex_i), ...
-                   mono_rank_grlex(n, grlex_j)) = q.coef(j);
+        i = 1;
+        while sum(grlex_i) <= d0   % for each monomial
+          plt.data(i, mono_rank_grlex(n, grlex_i + q.mons(:, j))) = q.coef(j);
           grlex_i = mono_next_grlex(n, grlex_i);
+          i = i+1;
         end
       end
 

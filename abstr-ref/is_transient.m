@@ -47,4 +47,5 @@ function [res] = is_transient(rec, dyn_list)
       new_dyn_list{i} = fx;
     end
   end
-  res = is_transient_nlin(rec, new_dyn_list, 4);
+  res = is_transient_nlin_sdsos(rec, new_dyn_list, 4);
+  % res = is_transient_nlin(rec, new_dyn_list, 4);

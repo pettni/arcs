@@ -13,7 +13,7 @@ function vert = getVertexI(rec, i)
 
   vert = rec.xmin;
   
-  act_fulldim = dec2bin(i-1, n_fulldim) - '0';
+  act_fulldim = logical(dec2bin(i-1, n_fulldim) - '0');
   vert(ind_fulldim(act_fulldim)) = rec.xmax(ind_fulldim(act_fulldim));
   
 end

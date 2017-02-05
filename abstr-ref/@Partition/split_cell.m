@@ -33,7 +33,7 @@ function [ind1, ind2] = split_cell(part, ind, dim)
   N = length(part);
 
   % split cell number ind along dimension dim
-  [p1 p2] = split(part.cell_list(ind),dim);
+  [p1, p2] = split(part.cell_list(ind),dim);
 
   %%% construct adjacency to be filled %%%
   new_adj = [part.adjacency zeros(N,1); zeros(1, N+1)];

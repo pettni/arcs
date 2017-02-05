@@ -60,6 +60,4 @@ function value = i4_choose ( n, k )
     end
 
   end
-
-  return
 end
