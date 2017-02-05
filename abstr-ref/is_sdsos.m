@@ -1,14 +1,10 @@
-function [ret, M_list] = is_sdsos(A, relax)
+function [ret, M_list] = is_sdsos(A)
   % is_sdsos: determine if a matrix A is sdsos
   % A can be a square matrix or the (n*(n+1)/2) row vector representation of
   % a symmetric matrix
-  % relax: analyze A + relax*I
 
   % Set up a conelp and see if it is feasible
   % [I] [c] = [v];  c sdsos
-  if nargin < 2
-    relax = 0;
-  end
 
   if size(A,1) == 1
     v = A;
@@ -29,11 +25,6 @@ function [ret, M_list] = is_sdsos(A, relax)
     error('vector does not represent a symmetric matrix')
   end
   
-  for i = 1:n
-    k = symmat_ij_k(i,i,length(v));
-    v(k) = v(k) + relax;
-  end
-
   prob = [];
   prob.a = speye(length(v));
   prob.buc = v';

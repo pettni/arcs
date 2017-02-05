@@ -2,24 +2,32 @@ function result = is_transient_nlin_sdsos(rec1, dyn_list, tot_deg)
   % Determine if the modes dyn_list = {fx1, fx2, ...}, where
   % fx = {f, xvar, (dvar, drec)} is transient on rec1 using 
   % relaxation order tot_deg
+  %
+  % Limitation: in multi-case, assumes dyn's with the same disturbance 
+  % variables have matching disturbance bounds
   epsilon = 1;
 
-  all_rec = rec1;
-  all_var = dyn_list{1}{2};
-  n_x = length(all_var);
+  M = length(dyn_list);  % number of modes
+  x_var = dyn_list{1}{2};
+  d_var = [];
+  d_recs = [];
   deg_f = 0;
 
-  M = length(dyn_list);  % number of modes
-
-  for i = 1:M
-    if length(dyn_list{i}) > 2
-      % Disturbance
-      all_var = [all_var; dyn_list{i}{3}];
-      all_rec = all_rec * dyn_list{i}{4};
+  all_d_rec = Rec(zeros(2,0));
+  for m = 1:M
+    if length(dyn_list{m}) > 2
+      d_var = [d_var; dyn_list{m}{3}];
+      all_d_rec = all_d_rec * dyn_list{m}{4};
     end
-    deg_f = max(deg_f, degree(dyn_list{i}{1}));
+    deg_f = max(deg_f, degree(dyn_list{m}{1}));
   end
-  n_d = length(all_var) - n_x;
+
+  [d_var, idx] = unique(d_var);
+  all_rec = rec1 * Rec([all_d_rec.xmin(idx); all_d_rec.xmax(idx)]);
+  all_var = [x_var; d_var];
+
+  n_x = length(x_var);
+  n_d = length(d_var);
 
   % For all m: -d B . f_m (x,d) - eps - \sum_i sji(x,d) gji(x,d)  >= 0 
   % Overall equation is in vars x,d and degree tot_deg
