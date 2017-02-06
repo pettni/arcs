@@ -8,7 +8,7 @@ function result = is_transient_lin(rec1, fx, drec)
 
   n = size(Ad, 2);
 
-  if length(fx) == 3 && nargin == 3
+  if length(fx) == 3 && nargin == 3 && ~isempty(drec)
     Ed = fx{3};
   else
     % No disturbance

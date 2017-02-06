@@ -11,6 +11,9 @@ classdef Polynomial<handle
   %
   % - Polynomial(coef, mons) create a Polynomial with coefficients 'coef' (1 x k)
   %                          for the monomials 'mons' (n x k), for k > 1
+  %
+  % Remark: this class is experimental and in need of improvement for general-
+  %         purpose use
 
   properties (SetAccess=protected)
     coef;

@@ -1,13 +1,13 @@
-function result = is_transient_nlin(rec1, dyn_list, vars, drec, deg)
+function result = is_transient_nlin(rec1, dyn_list, drec, deg)
   % Determine if the modes dyn_list = {fx1, fx2, ...}, where
-  % fx = {f, vars, drec} is transient on rec1 using 
+  % fx = {f, vars} is transient on rec1 using 
   % relaxation order deg
 
   global ops;
 
-  n_x = length(dyn_list{1});
+  n_x = length(dyn_list{1}{1});
+  vars = dyn_list{1}{2};
   xvars = vars(1:n_x);
-
   [Bx, coefs] = polynomial(xvars, deg, 1);
 
   epsilon = 10;
@@ -23,7 +23,6 @@ function result = is_transient_nlin(rec1, dyn_list, vars, drec, deg)
 
   all_rec = rec1 * drec;
 
-  % Add x constraints
   for i=1:length(vars)
     polys = [polys; all_rec.xmin(i)-vars(i)]; %<=0;
     polys = [polys; vars(i)-all_rec.xmax(i)];
@@ -36,7 +35,7 @@ function result = is_transient_nlin(rec1, dyn_list, vars, drec, deg)
 
   % Add lyapunov constraints
   for i=1:length(dyn_list)
-    F = [F; sos(sos_mult'*polys - jacobian(Bx, xvars)*dyn_list{i} - epsilon)];
+    F = [F; sos(sos_mult'*polys - jacobian(Bx, xvars)*dyn_list{i}{1} - epsilon)];
   end
 
   diagnostics = solvesos(F, [], ops, [coefs; msos_coefs]);

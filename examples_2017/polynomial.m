@@ -13,7 +13,7 @@ goal_set = Rec([-1 0.5; -0.2 1.8], {'goal'});
 unsafe_set = Rec([-2 -1.5; -.5 -1], {'unsafe'});
 
 maxiter = 80;
-show_plot = 0;
+show_plot = 1;
 use_pgs = 1;
 disturbance = 0.5;
 
@@ -89,8 +89,8 @@ while true
 
   if show_plot
     clf; hold on
-    part.plot_vf();
-    plot(part(Cwin), [0 0 1], 0.8, 0);
+    part.plot;
+    plot(part(Cwin), [0 0 1], 0.5, 0);
     drawnow;
   end
 

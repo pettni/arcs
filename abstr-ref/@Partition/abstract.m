@@ -47,6 +47,7 @@ function abstract(part, dyn_list, vars, drec)
     else
       error('opt_settings.mode must be sdsos or sos')
     end
+    part.dyn_list_orig{act_num} = {dyn_list{m}, vars};
   end
 
   % Figure out transitions

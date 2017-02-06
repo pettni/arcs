@@ -22,31 +22,31 @@ function plot_vf(part, controller)
 
     color_list = prism(double(part.ts.n_a));
 
-    for a = 1:length(part.act_list)
+    for a = 1:length(part.dyn_list)
       % TODO: implement for linear systems
-      fx = part.act_list{a}{1};
-      xvar = part.act_list{a}{2};
-      if length(part.act_list{a}) > 2
-        dvar = part.act_list{a}{3};
-        drec = part.act_list{a}{4};
-      else
-        drec = Rec([0; 0]);
-      end
+      fx = part.dyn_list_orig{a}{1};
+      vars = part.dyn_list_orig{a}{2};
 
       fx1 = strrep(strrep(sdisplay(fx(1)), '*', '.*'), '^', '.^');
       fx2 = strrep(strrep(sdisplay(fx(2)), '*', '.*'), '^', '.^');
-      fx1 = strrep(fx1, 'xvar(1)', 'x1');
-      fx1 = strrep(fx1, 'xvar(2)', 'x2');
-      fx1 = strrep(fx1, 'dvar', 'd1');
-      fx2 = strrep(fx2, 'xvar(1)', 'x1');
-      fx2 = strrep(fx2, 'xvar(2)', 'x2');
-      fx2 = strrep(fx2, 'dvar', 'd1');
+      fx1 = strrep(fx1, 'vars(1)', 'x1');
+      fx1 = strrep(fx1, 'vars(2)', 'x2');
+      fx1 = strrep(fx1, 'vars(3)', 'd1');
+      fx2 = strrep(fx2, 'vars(1)', 'x1');
+      fx2 = strrep(fx2, 'vars(2)', 'x2');
+      fx2 = strrep(fx2, 'vars(3)', 'd1');
       eval(strcat('fx1_lambda = @(x1, x2, d1) ', fx1{1}, ';')); 
       eval(strcat('fx2_lambda = @(x1, x2, d1) ', fx2{1}, ';')); 
 
-      for dval = drec.getVertices
-        U = fx1_lambda(X+dx*a, Y, dval);
-        V = fx2_lambda(X+dx*a, Y, dval);
+      if ~isempty(part.d_rec)
+        for dval = part.d_rec.getVertices
+          U = fx1_lambda(X+dx*a, Y, dval);
+          V = fx2_lambda(X+dx*a, Y, dval);
+          quiver(X+dx*a,Y,U,V,'color',color_list(a,:))
+        end
+      else
+        U = fx1_lambda(X+dx*a, Y, 0);
+        V = fx2_lambda(X+dx*a, Y, 0);
         quiver(X+dx*a,Y,U,V,'color',color_list(a,:))
       end
     end

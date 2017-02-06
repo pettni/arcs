@@ -14,8 +14,23 @@ function [res] = is_transient(rec, dyn_list, drec)
     % Todo: convert linear to poly/yalm
     if strcmp(opt_settings.mode, 'sos')
       % Convert to sdp
+      n_x = length(dyn_list{1});
+      n_d = length(dyn_list{1}{2}) - n_x;
+      xvar = sdpvar(n_x, 1);
+      dvar = sdpvar(n_d, 1);
+      new_dyn_list = cell(1, length(dyn_list))
+      for m = 1:length(dyn_list)
+        fx = dyn_list{m};
+        if isa(fx, 'cell') && isa(fx{1}, 'double')
+          % Convert to Polynomial
+          new_dyn_list{m} = {fx{1}*xvar + fx{2} + fx{3} * dvar, xvar};
+        else
+          % Just copy
+          new_dyn_list{m} = fx;
+        end      
+      end
 
-      res = is_transient_nlin(rec, dyn_list, drec, opt_settings.max_deg);
+      res = is_transient_nlin(rec, new_dyn_list, drec, opt_settings.max_deg);
 
     elseif strcmp(opt_settings.mode, 'sdsos')
 

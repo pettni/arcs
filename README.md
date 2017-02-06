@@ -38,9 +38,10 @@ Necmiye Ozay, University of Michigan
 
 ## Todo list
 
- - Implement remaining algorithms from manuscript, including control extraction
- - Class for semialgebraic partition/sets
+ - Add custom sos through PolyLinTrans
+ - Class for semialgebraic partition/sets (c.f. hyperplane arrangement)
  - Additional tests
+	- Dual algorithms
     - Control strategies
     - Candidate sets
     - System-level test

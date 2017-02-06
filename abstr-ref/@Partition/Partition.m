@@ -7,6 +7,7 @@ classdef Partition<handle
     adjacency; % Sparse matrix containing adjacency information
     adjacency_outside; % Which cells are at the boundary of the domain?
     dyn_list  % list of added modes
+    dyn_list_orig  % list of added modes in sdpvar format
     d_rec     % disturbance set
     trans_reg_U; % list of transient regions
     trans_reg_rec;
@@ -24,6 +25,7 @@ classdef Partition<handle
       r.cell_list = [domain];
       r.adjacency = [];
       r.dyn_list = {};
+      r.dyn_list_orig = {};
       r.trans_reg_U = {};
       r.trans_reg_rec = {};
       r.d_rec = [];
