@@ -22,13 +22,13 @@ randseed(1);
 
 for sim = 1:numsim
   x = win_min' + rand(3,1) .* (win_max' - win_min');
-  while isInside(boringset, x) || part.find_cell(x) == -1
+  while isInside(boringset, x) || part.find_cell(x) == -1 || ~ismember(part.find_cell(x), Win)
     x = win_min' + rand(3,1) .* (win_max' - win_min');
   end
   s = part.find_cell(x);
   t = 0;
 
-  acts = Klist{1}{1}(s);
+  acts = cont(s);
   act = acts(1);
 
   offset1 = rand(1,1);
@@ -44,7 +44,7 @@ for sim = 1:numsim
       s = part.find_cell(x);
 
       % Lazy strategy
-      acts = Klist{1}{1}(s);
+      acts = cont(s);
       if ~ismember(act, acts)
         act = acts(randi(length(acts)));
       end
@@ -54,9 +54,9 @@ for sim = 1:numsim
     d1 = dmax * sin(2*pi*offset1 + 2*pi*t/(24*3600));
     d2 = dmax * sin(2*pi*offset2 + 2*pi*t/(24*3600));
 
-    x = x + (act_set{act}{1} * x + ...
-             act_set{act}{2} + ...
-             act_set{act}{3} * [d1; d2]) * dt;
+    x = x + (part.dyn_list{act}{1} * x + ...
+             part.dyn_list{act}{2} + ...
+             part.dyn_list{act}{3} * [d1; d2]) * dt;
     t = t + dt;
     xvec(:, i) = x;
     avec(:, i) = act;
