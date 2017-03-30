@@ -111,6 +111,6 @@ function setupOnce(testCase)  % do not change function name
   global ops
   ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
   global opt_settings;
-  opt_settings.mode = 'sdsos'
+  opt_settings.mode = 'sdsos';
   opt_settings.max_deg = 4;
 end

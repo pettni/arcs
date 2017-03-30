@@ -14,11 +14,12 @@ function test_transient1(testCase)
   sdpvar x y;
   vars = [x; y];
 
-  dyn_list = {A1*vars + K1, A2*vars + K2};
+  fx1 = {A1*vars + K1, vars};
+  fx2 = {A2*vars + K2, vars};
 
-  verifyEqual(testCase, is_transient_nlin(r, {dyn_list{1}}, vars, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, {dyn_list{2}}, vars, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, dyn_list, vars, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx2}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1, fx2}, [], 4), true);
 end
 
 function test_transient2(testCase)
@@ -31,11 +32,12 @@ function test_transient2(testCase)
   sdpvar x y;
   vars = [x; y];
 
-  dyn_list = {A1*vars + K1, A2*vars + K2};
+  fx1 = {A1*vars + K1, vars};
+  fx2 = {A2*vars + K2, vars};
 
-  verifyEqual(testCase, is_transient_nlin(r, {dyn_list{1}}, vars, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, {dyn_list{2}}, vars, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, dyn_list, vars, [], 4), false);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx2}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1, fx2}, [], 4), false);
 end
 
 function test_transient3(testCase)
@@ -48,11 +50,12 @@ function test_transient3(testCase)
   sdpvar x y z;
   vars = [x; y; z];
 
-  dyn_list = {A1*vars + K1, A2*vars + K2};
+  fx1 = {A1*vars + K1, vars};
+  fx2 = {A2*vars + K2, vars};
 
-  verifyEqual(testCase, is_transient_nlin(r, {dyn_list{1}}, vars, [], 4), false);
-  verifyEqual(testCase, is_transient_nlin(r, {dyn_list{2}}, vars, [], 4), false);
-  verifyEqual(testCase, is_transient_nlin(r, dyn_list, vars, [], 4), false);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1}, [], 4), false);
+  verifyEqual(testCase, is_transient_nlin(r, {fx2}, [], 4), false);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1, fx2}, [], 4), false);
 end
 
 function test_radiant1(testCase)
@@ -75,12 +78,12 @@ function test_radiant1(testCase)
     0.1020/10];
 
   x = sdpvar(3,1);
-  fx1 = A1*x + K1;
-  fx2 = A2*x + K2;
+  fx1 = {A1*x + K1, x};
+  fx2 = {A2*x + K2, x};
 
-  verifyEqual(testCase, is_transient_nlin(r, {fx1}, x, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, {fx2}, x, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, {fx1, fx2}, x, [], 4), false);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx2}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1, fx2}, [], 4), false);
 end
 
 function test_radiant2(testCase)
@@ -102,12 +105,12 @@ function test_radiant2(testCase)
     0.0011];
 
   x = sdpvar(3,1);
-  fx1 = A1*x + K1;
-  fx2 = A2*x + K2;
+  fx1 = {A1*x + K1 ,x};
+  fx2 = {A2*x + K2, x};
 
-  verifyEqual(testCase, is_transient_nlin(r, {fx1}, x, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, {fx2}, x, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, {fx1, fx2}, x, [], 4), false);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx2}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx1, fx2}, [], 4), false);
 end
 
 
@@ -122,8 +125,11 @@ function test_disturbance(testCase)
 
   drec = Rec([-1.1, 1.1]);
 
-  verifyEqual(testCase, is_transient_nlin(r, {A*x+B}, x, [], 4), true);
-  verifyEqual(testCase, is_transient_nlin(r, {A*x+B+E*d}, x, drec, 4), false);
+  fx1 = {A*x+B, [x]};
+  fx2 = {A*x+B+E*d, [x;d]};
+
+  verifyEqual(testCase, is_transient_nlin(r, {fx1}, [], 4), true);
+  verifyEqual(testCase, is_transient_nlin(r, {fx2}, drec, 4), false);
 
 end
 
