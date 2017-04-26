@@ -51,4 +51,4 @@ Necmiye Ozay, University of Michigan
 ## References
 
  - Nilsson, P and Ozay, N, "Incremental Synthesis of Switching Protocols via Abstraction Refinement", Proc. of IEEE CDC, 2014.
- - Nilsson, P, Ozay, N and Liu, N, :Augmented Finite Transition Systems as Abstractions for Control Synthesis", Journal of Discrete Event Dynamic Systems (Special issue on Formal Methods in Control), 2017.
+ - Nilsson, P, Ozay, N and Liu, J, "Augmented Finite Transition Systems as Abstractions for Control Synthesis", Journal of Discrete Event Dynamic Systems (Special issue on Formal Methods in Control), 2017.
