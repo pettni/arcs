@@ -4,7 +4,7 @@ function [V, C, cont] = win_eventually_or_persistence(ts, P, B_list, quant1)
   % under (quant1, 'forall')-controllability
 
   V = [];
-
+  C = []; %%% todo?
   if nargout > 2
     Klist = {};
     Vlist = {};
@@ -13,19 +13,19 @@ function [V, C, cont] = win_eventually_or_persistence(ts, P, B_list, quant1)
   while true
     if nargout > 2
       [preV, K] = ts.pre(V, [], quant1, 0);
-      P_inner = union(P, ts.pre(V, [], quant1, 0));
-      Vlist{end} = P_inner;
-      Klist{end} = K;
+      P_inner = union(P, preV);
+      Vlist{end+1} = P_inner;
+      Klist{end+1} = K;
     else
       preV = ts.pre(V, [], quant1, 0);
-      P_inner = union(P, ts.pre(V, [], quant1, 0));
+      P_inner = union(P, preV);
     end
     
     if nargout > 2
       [preVinv, ~, Kinv] = ts.pre_pg(V, uint32(1:ts.n_s), quant1);
       P_inner = union(P_inner, preVinv);
-      Vlist{end} = P_inner;
-      Klist{end} = Kinv;
+      Vlist{end+1} = P_inner;
+      Klist{end+1} = Kinv;
     else
       preVinv = ts.pre_pg(V, uint32(1:ts.n_s), quant1);
       P_inner = union(P_inner, preVinv);
@@ -33,8 +33,8 @@ function [V, C, cont] = win_eventually_or_persistence(ts, P, B_list, quant1)
     
     if nargout > 2
       [Vt, ~, Kt] = ts.win_until_or_always(B_list, P_inner, quant1);
-      Vlist{end} = Vt;
-      Klist{end} = Kt;
+      Vlist{end+1} = Vt;
+      Klist{end+1} = Kt;
     else
       Vt = ts.win_until_or_always(B_list, P_inner, quant1);
     end
