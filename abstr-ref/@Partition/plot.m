@@ -39,7 +39,9 @@ function plot(part, alpha, add_numbers)
     h_list = [h_list h];
     legend_list{end+1} = [aps{i}];
   end
-  legend(h_list,legend_list, 'location', 'NorthEastOutside')
+  if length(h_list) > 0
+    legend(h_list,legend_list, 'location', 'NorthEastOutside')
+  end
 
   if add_numbers
     for i = 1:length(part)
