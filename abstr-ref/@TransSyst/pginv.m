@@ -7,6 +7,17 @@ function [W, Cw, cont] = pginv(ts, U, G, Z, B, quant1)
   % Returns a sorted set
   % 
   % Contracting algorithm
+  
+  if strcmp(ts.sys_setting, ts.bdd_set)
+    if nargout == 1
+      W = ts.bdd_sys.pginv(U, G, Z, B, quant1);
+    elseif nargout == 2
+      [W, Cw] = ts.bdd_sys.pginv(U, G, Z, B, quant1);
+    elseif nargout == 3
+      [W, Cw, cont] = ts.bdd_sys.pginv(U, G, Z, B, quant1);
+    end
+    return;
+  end
 
   W1 = setdiff(intersect(uint32(G), uint32(B)), uint32(Z));
   W = W1;

@@ -2,6 +2,18 @@ function [W, Cw, cont] = pre_pg(ts, V, B, quant1)
   % pre_pg: pre(V) under (quant1, forall) while remaining in B using progress groups
   % 
   % Returns a sorted set
+  
+  if strcmp(ts.sys_setting, TransSyst.bdd_set)
+    if nargout == 1
+      W = ts.bdd_sys.pre_pg(V, B, quant1);
+    elseif nargout == 2
+      [W, Cw] = ts.bdd_sys.pre_pg(V, B, quant1);
+    elseif nargout == 3
+      [W, Cw, cont] = ts.bdd_sys.pre_pg(V, B, quant1);
+    end
+    return;
+  end
+  
   W = uint32(V);
   Vlist = {V};
   Cw = [];

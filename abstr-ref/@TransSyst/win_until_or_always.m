@@ -3,6 +3,17 @@ function [V, C, cont] = win_until_or_always(ts, B_list, Z, quant1)
   %     or_i ( B_i U Z || []B_i )
   % under (quant1, 'forall')-controllability
 
+  if strcmp(ts.sys_setting, TransSyst.bdd_set)
+    if nargout == 1
+      V = ts.bdd_sys.win_until_or_always(B_list, Z, quant1)
+    elseif nargout == 2
+      [V, C] = ts.bdd_sys.win_until_or_always(B_list, Z, quant1);
+    elseif nargout == 3
+      [V, C, cont] = ts.bdd_sys.win_until_or_always(B_list, Z, quant1);
+    end
+    return;
+  end
+  
   num_subset = 2^length(B_list);
 
   V_list = cell(1, num_subset-1);

@@ -2,6 +2,12 @@ function ret = post(ts, q, a)
   % post(ts, q, a): compute the post set of state q and action a
   % 
   % Returns a sorted set
+  
+  if strcmp(ts.sys_setting, TransSyst.bdd_set)
+      ret = ts.post(ts, q, a);
+      return;
+  end
+  
   if ts.fast_enabled
     ret = ts.fast_post{(a-1) * ts.n_s + q};
   else

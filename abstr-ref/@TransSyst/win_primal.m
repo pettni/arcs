@@ -11,6 +11,17 @@ function [V, Cv, cont] = win_primal(ts, A, B, C_list, quant1, quant2, V)
   if nargin<7
     V = [];
   end
+  
+  if strcmp(ts.sys_setting, TransSyst.bdd_set)
+    if nargout == 1
+      V = ts.bdd_sys.win_primal(A, B, C_list, quant1, quant2);
+    elseif nargout == 2
+      [V, Cv] = ts.bdd_sys.win_primal(A, B, C_list, quant1, quant2);
+    elseif nargout == 3
+      [V, Cv, cont] = ts.bdd_sys.win_primal(A, B, C_list, quant1, quant2);
+    end
+    return;
+  end
 
   if isempty(A)
     A = uint32(1:ts.n_s);
