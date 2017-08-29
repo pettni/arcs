@@ -1,6 +1,6 @@
 # ABSTR-REFINEMENT
 
-Toolbox in development for incremental synthesis of correct-by-construction switching protocols. 
+Toolbox in development for incremental synthesis of correct-by-construction switching protocols.
 
 ## Functionality
 
@@ -47,6 +47,9 @@ Necmiye Ozay, University of Michigan
     - System-level test
  - Improve documentation
  - Write custom SOS optimization to avoid overhead (translate python socp impl.)
+ - Add BDD support for controller extraction and dual sets
+ - Save/load functions for BDD transition system
+ - Improve documentation and type security of mex code
 
 ## References
 
