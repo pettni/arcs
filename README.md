@@ -14,7 +14,7 @@ Toolbox in development for incremental synthesis of correct-by-construction swit
  - Yalmip and a supported solver is required for semidefinite optimization, tested version R20160930.
  - [Mosek](https://mosek.com) for conic optimization, tested with version 8.
  - [arrow.m](https://www.mathworks.com/matlabcentral/fileexchange/278-arrow) for certain plotting.
-
+ - Windows 64bit for BDD support (so far) or MATLAB mex compiler to compile mex function
 ## Usage
 
 Add the folder ```abstr-ref``` to the Matlab path: ```addpath /path/to/abstr-ref```.
@@ -50,6 +50,7 @@ Necmiye Ozay, University of Michigan
  - Add BDD support for controller extraction and dual sets
  - Save/load functions for BDD transition system
  - Improve documentation and type security of mex code
+ - Add tests for BDD implementation
 
 ## References
 
