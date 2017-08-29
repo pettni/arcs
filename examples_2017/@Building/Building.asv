@@ -12,11 +12,6 @@ classdef Building<handle
           %                  creating building dynamics
           %
           %   building = create_building(room_pos, room_slabs, room_types)
-          %   Creates a building with the rooms at 2D positions given by
-          %   the rows of room_pos, where room_slabs(i) = k means room i 
-          %   contains cooling slab k (k = 0 => no slab). The type of each
-          %   room (type of dimension and other params) is specified by
-          %   room_types, type being either 1 or 2.
           %
           build = Building(size(room_pos, 1), max(room_slabs));
             slabs = {};
