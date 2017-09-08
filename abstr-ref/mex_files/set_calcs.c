@@ -137,7 +137,7 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* Z, DdNode* B,
 DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
 {
     DdNode* T = sys->trans_sys;
-    DdNode* valid_transitions = T;
+    DdNode* valid_transitions;
     DdNode* tmp;
 
     DdNode* outCube = Cudd_bddComputeCube(sys->manager, array_list(sys->s_out_vars), NULL, sys->s_var_num);
@@ -166,24 +166,16 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
     }
     else if (quant1 == 'e' && quant2 == 'a')
     {
-        DdNode* not_X = Cudd_Not(X_prime);
-        Cudd_Ref(not_X);
-        DdNode* state_a_pairs_not_X = Cudd_bddAndAbstract(sys->manager, T, not_X, outCube);
+        DdNode* state_a_pairs_not_X = Cudd_bddAndAbstract(sys->manager, T, Cudd_Not(X_prime), outCube);
         Cudd_Ref(state_a_pairs_not_X);
-
-        tmp = Cudd_Not(state_a_pairs_not_X);
-        Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, state_a_pairs_not_X);
-        state_a_pairs_not_X = tmp;
 
         DdNode* state_a_pairs_X = Cudd_bddExistAbstract(sys->manager, T, outCube);
         Cudd_Ref(state_a_pairs_X);
 
-        valid_transitions = Cudd_bddAnd(sys->manager, state_a_pairs_X, state_a_pairs_not_X);
+        valid_transitions = Cudd_bddAnd(sys->manager, state_a_pairs_X, Cudd_Not(state_a_pairs_not_X));
         Cudd_Ref(valid_transitions);
         Cudd_RecursiveDeref(sys->manager, state_a_pairs_X);
         Cudd_RecursiveDeref(sys->manager, state_a_pairs_not_X);
-
 
         tmp = Cudd_bddAndAbstract(sys->manager, valid_transitions, A, aCube);
         Cudd_Ref(tmp);
@@ -192,21 +184,16 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
     }
     else if(quant1 == 'a' && quant2 == 'a')
     {
-        DdNode* not_X = Cudd_Not(X_prime);
-        Cudd_Ref(not_X);
-        DdNode* state_a_pairs_not_X = Cudd_bddAndAbstract(sys->manager, T, not_X, outCube);
+        DdNode* state_a_pairs_not_X = Cudd_bddAndAbstract(sys->manager, T, Cudd_Not(X_prime), outCube);
         Cudd_Ref(state_a_pairs_not_X);
-
-        tmp = Cudd_Not(state_a_pairs_not_X);
-        Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, state_a_pairs_not_X);
-        state_a_pairs_not_X = tmp;
 
         DdNode* state_a_pairs_X = Cudd_bddExistAbstract(sys->manager, T, outCube);
         Cudd_Ref(state_a_pairs_X);
 
-        valid_transitions = Cudd_bddAnd(sys->manager, state_a_pairs_X, state_a_pairs_not_X);
+        valid_transitions = Cudd_bddAnd(sys->manager, state_a_pairs_X, Cudd_Not(state_a_pairs_not_X));
         Cudd_Ref(valid_transitions);
+        Cudd_RecursiveDeref(sys->manager, state_a_pairs_X);
+        Cudd_RecursiveDeref(sys->manager, state_a_pairs_not_X);
 
         tmp = Cudd_bddOr(sys->manager, valid_transitions, Cudd_Not(A));
         Cudd_Ref(tmp);
@@ -240,6 +227,9 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
         return NULL;
     }
 
+    Cudd_RecursiveDeref(sys->manager, outCube);
+    Cudd_RecursiveDeref(sys->manager, aCube);
+
     return valid_transitions;
 }
 
@@ -269,11 +259,15 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
     // no reach to Z
     if (Cudd_EquivDC(sys->manager, quick_test, Cudd_ReadLogicZero(sys->manager), Cudd_ReadLogicZero(sys->manager)))
     {
+        deref(quick_test);
         deref(Y);
         Y = Cudd_ReadLogicZero(sys->manager);
         Cudd_Ref(Y);
-        Cw = Cudd_ReadLogicZero(sys->manager);
-        Cudd_Ref(Cw);
+        if (mode >= WIN_CANDIDATE_SET)
+        {
+            Cw = Cudd_ReadLogicZero(sys->manager);
+            Cudd_Ref(Cw);
+        }
         DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
         if (mode >= WIN_SET)
         {
@@ -281,10 +275,12 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
             if (mode >= WIN_CANDIDATE_SET)
                 out[1] = Cw;
         }
+
         return out;
     }
+    deref(quick_test);
 
-    if (mode == WIN_CANDIDATE_SET) // get candidate space
+    if (mode >= WIN_CANDIDATE_SET) // get candidate space
     {
         Cw = Cudd_bddAnd(sys->manager, Y, Cudd_Not(Z));
         Cudd_Ref(Cw);
@@ -299,9 +295,9 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
     {
         deref(old_Y);
         old_Y = Y;
-        tmp = Cudd_bddOr(sys->manager, Y, Z);
-        Cudd_Ref(tmp);
 
+        tmp = Cudd_bddOr(sys->manager, old_Y, Z);
+        Cudd_Ref(tmp);
         DdNode* pre_set = pre(sys, tmp, U, quant, 'a');
         deref(tmp);
 
@@ -311,6 +307,7 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
         pre_set = tmp;
         Y = Cudd_bddAnd(sys->manager, old_Y, pre_set);
         Cudd_Ref(Y);
+        deref(pre_set);
     }
     deref(old_Y);
 
@@ -333,9 +330,12 @@ DdNode** PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
     Cudd_Ref(PG_set);
     DdNode* inv_set;
     DdNode* tmp;
-    DdNode* Cw = Cudd_ReadLogicZero(sys->manager);
-    Cudd_Ref(Cw);
-
+    DdNode* Cw;
+    if (mode >= WIN_CANDIDATE_SET)
+    {
+        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cudd_Ref(Cw);
+    }
     for (int i = 0; i < array_len(sys->pg_U); i++)
     {
         if (array_get(sys->pg_U, i) == NULL)
@@ -343,7 +343,6 @@ DdNode** PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
         if (quant == 'a' && !Cudd_EquivDC(sys->manager, array_get(sys->pg_U, i), sys->all_actions, Cudd_Not(sys->all_actions)))
         {
             mexPrintf("This happens! Progress group skipped\n");
-            mexEvalString("pause(2);");
             continue;
         }
 
@@ -385,8 +384,12 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
     DdNode* PGpre_set;
     DdNode* pre_set;
     DdNode* tmp;
-    DdNode* Cw = Cudd_ReadLogicZero(sys->manager);
-    Cudd_Ref(Cw);
+    DdNode* Cw;
+    if (mode >= WIN_CANDIDATE_SET)
+    {
+        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cudd_Ref(Cw);
+    }
     DdNode* one = Cudd_ReadOne(sys->manager);
     Cudd_Ref(one);
     DdNode* X = Cudd_ReadLogicZero(sys->manager);
@@ -468,8 +471,12 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
     DdNode* win_until_set;
     DdNode* B_always;
     DdNode* Z_always;
-    DdNode* Cw = Cudd_ReadLogicZero(sys->manager);
-    Cudd_Ref(Cw);
+    DdNode* Cw;
+    if (mode >= WIN_CANDIDATE_SET)
+    {
+        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cudd_Ref(Cw);
+    }
     DdNode* tmp;
 
     if (!Cudd_EquivDC(sys->manager, A, sys->all_states, Cudd_Not(sys->all_states)))
@@ -481,6 +488,8 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
         deref(always_A);
 
         DdNode** in = win_intermediate(sys, sys->all_states, A, zero, &one, 1, quant, mode);
+        Cudd_RecursiveDeref(sys->manager, zero);
+        Cudd_RecursiveDeref(sys->manager, one);
         if (mode >= WIN_SET)
         {
             always_A = in[0];
@@ -497,8 +506,11 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
     Cudd_Ref(B_always);
     Z_always = Cudd_bddAnd(sys->manager, always_A, Z);
     Cudd_Ref(Z_always);
+    deref(always_A);
 
     DdNode** in = win_until(sys, Z_always, B_always, quant, mode);
+    Cudd_RecursiveDeref(sys->manager, B_always);
+    Cudd_RecursiveDeref(sys->manager, Z_always);
     if (mode >= WIN_SET)
     {
         win_until_set = in[0];
@@ -534,8 +546,12 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
     DdNode* one = Cudd_ReadOne(sys->manager);
     Cudd_Ref(one);
     DdNode* win_until_set;
-    DdNode* Cw = Cudd_ReadLogicZero(sys->manager);
-    Cudd_Ref(Cw);
+    DdNode* Cw;
+    if (mode >= WIN_CANDIDATE_SET)
+    {
+        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cudd_Ref(Cw);
+    }
     DdNode* W_1;
 
     W = Cudd_ReadOne(sys->manager);
@@ -555,11 +571,11 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
 
         DdNode* intermediate = Cudd_bddAnd(sys->manager, B, pre_set);
         Cudd_Ref(intermediate);
+        deref(pre_set);
 
         for (int i = 0; i < C_num; i++)
         {
-            Z_iter[i] = intermediate;
-            tmp = Cudd_bddAnd(sys->manager, C[i], Z_iter[i]);
+            tmp = Cudd_bddAnd(sys->manager, C[i], intermediate);
             Cudd_Ref(tmp);
             Z_iter[i] = tmp;
             tmp = Cudd_bddOr(sys->manager, Z_iter[i], Z);
@@ -576,23 +592,32 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
                     tmp = Cudd_bddOr(sys->manager, Cw, in[1]);
                     Cudd_Ref(tmp);
                     deref(Cw);
+                    deref(in[1]);
                     Cw = tmp;
                 }
             }
             mxFree(in);
-            W = Cudd_bddAnd(sys->manager, W, win_until_set);
-            Cudd_Ref(W);
+            tmp = Cudd_bddAnd(sys->manager, W, win_until_set);
+            Cudd_Ref(tmp);
+            if (i > 0)
+                deref(W);
+            W = tmp;
+            deref(win_until_set);
             deref(Z_iter[i]);
         }
+        deref(intermediate);
 
         if (mode >= WIN_CANDIDATE_SET && first_set)
         {
-            W_1 = W;
+            W_1 = Cudd_bddAnd(sys->manager, W, Cudd_ReadOne(sys->manager));
+            Cudd_Ref(W_1);
             first_set = 0;
         }
-        deref(pre_set);
+
     }
     mxFree(Z_iter);
+    deref(one);
+    deref(old_W);
 
     DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
     if (mode >= WIN_SET)
@@ -602,6 +627,7 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
         {
             DdNode* W_set = Cudd_bddAnd(sys->manager, W_1, Cudd_Not(W));
             Cudd_Ref(W_set);
+            deref(W_1);
             tmp = Cudd_bddOr(sys->manager, Cw, W_set);
             Cudd_Ref(tmp);
             deref(Cw);
@@ -617,12 +643,14 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
 DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
                    char quant1, char quant2, DdNode* head_start, int mode)
 {
+    int C_created = 0;
     if (C_num <= 0 || C == NULL)
     {
         C_num = 1;
         C = mxMalloc(sizeof(DdNode*));
         C[0] = Cudd_ReadOne(sys->manager);
         Cudd_Ref(C[0]);
+        C_created = 1;
     }
 
     // TODO: dualization
@@ -634,8 +662,10 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
         Cudd_Ref(V);
     }
     else
-        V = head_start;
-
+    {
+        V = Cudd_bddAnd(sys->manager, head_start, Cudd_ReadOne(sys->manager));
+        Cudd_Ref(V);
+    }
     DdNode* old_V = Cudd_ReadOne(sys->manager);
     Cudd_Ref(old_V);
     DdNode* one = Cudd_ReadOne(sys->manager);
@@ -645,6 +675,11 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
     DdNode* Z;
     DdNode* tmp;
     DdNode* Cw;
+    if (mode >= WIN_CANDIDATE_SET)
+    {
+        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cudd_Ref(Cw);
+    }
 
     if (Cudd_EquivDC(sys->manager, A, Cudd_ReadLogicZero(sys->manager), Cudd_ReadLogicZero(sys->manager)))
          A = one;
@@ -674,6 +709,7 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
             V = in[0];
             if (first_set && mode >= WIN_CANDIDATE_SET)
             {
+                deref(Cw);
                 Cw = in[1];
                 first_set = 0;
             }
@@ -681,6 +717,7 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
         deref(Z);
         mxFree(in);
     }
+    deref(old_V);
 
     if (mode >= WIN_CANDIDATE_SET)
     {
@@ -698,6 +735,7 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
         deref(tmp);
         Cw = tmp2;
     }
+    deref(one);
 
     DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
     if (mode >= WIN_SET)
@@ -707,6 +745,10 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
             out[1] = Cw;
     }
 
-    mxFree(C);
+    if (C_created)
+    {
+        deref(C[0]);
+        mxFree(C);
+    }
     return out;
 }

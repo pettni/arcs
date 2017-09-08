@@ -77,28 +77,53 @@ part.search_trans_reg(pg_depth);
 
 Win = [];
 iter = 0;
+max_time = 0.5*3600;
+data = zeros(0, 4);
+elapsed_time = 0;
+part.ts.bdd_sys.dyn_reordering(true);
+split_time = 0;
+prime_time = 0;
 while true
+  
   time = toc;
+  data(end+1, :) = [iter, time, length(part), sum(volume(part.cell_list(Win)))/volume(part.domain)];
   disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ' winning set volume: ', num2str(sum(volume(part.cell_list(Win)))/volume(part.domain))]);
+  disp(['iter: ', num2str(iter), ', prime_time: ', num2str(prime_time), ' | split_time: ', num2str(split_time)]);
   % Solve <>[] 'SET'
   B = part.get_cells_with_ap({'SET'});
-
-  [Win, Cwin] = part.ts.win_primal([], B, [], 'exists', 'forall', Win);
   
+%   if mod(iter,100) == 0
+%     disp('come here');
+%     sys_nodes = part.ts.bdd_sys.count_system_nodes();
+%     nodes = part.ts.bdd_sys.count_nodes();
+%     fprintf('nodes: %d, system nodes: %d\n', nodes, sys_nodes);
+%     %part.ts.bdd_sys.reorder(1000);
+%     sys_nodes = part.ts.bdd_sys.count_system_nodes();
+%     nodes = part.ts.bdd_sys.count_nodes();
+%     fprintf('new nodes: %d, new system nodes: %d\n', nodes, sys_nodes);
+%     disp('came here');
+%   end
+  
+  prime_time = toc;
+  [Win, Cwin] = part.ts.win_primal([], B, [], 'exists', 'forall', Win);
+  prime_time = toc - prime_time;
   % No need to split inside winning set
   Cwin = setdiff(Cwin, Win);
 
-  if isempty(Cwin) || iter == maxiter
+  if isempty(Cwin) || iter == maxiter || time >= max_time
     break;
   end
 
 %   Split largest cell in candidate set
   [~, C_index] = max(volume(part.cell_list(Cwin)));
+  split_time = toc;
   part.split_cell(Cwin(C_index));
+  split_time = toc - split_time;
   
   iter = iter + 1;
 end
 
+save('split_reorder_data.mat', 'data');
 % Split final set to eliminate Zeno
 % if split_inv
 %   inv_set = part.ts.win_primal(part.get_cells_with_ap({'SET'}), ...

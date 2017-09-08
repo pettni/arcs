@@ -279,6 +279,22 @@ classdef BDDSystem < handle
     function count = count_nodes(sys)
       count = mexBDD('count_nodes', sys.BDD_system_ID);
     end
+    
+    function count = count_dead_nodes(sys)
+      count = mexBDD('count_dead_nodes', sys.BDD_system_ID);
+    end
+    
+    function reorder(sys, bound)
+      mexBDD('reorder', sys.BDD_system_ID, bound);
+    end
+    
+    function dyn_reordering(sys, is_on)
+      mexBDD('toggle_reorder', sys.BDD_system_ID, is_on);
+    end
+    
+    function count = count_system_nodes(sys)
+      count = mexBDD('count_system_nodes', sys.BDD_system_ID);
+    end
   end
 end
 
