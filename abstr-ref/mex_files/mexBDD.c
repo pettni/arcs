@@ -39,6 +39,8 @@ uint fromBitArray_int(int* arr, uint len);
 DdNode* makeSet(DdManager* manager, DdNode** vars, int var_num, int* inds, int n, EncList* encodings);
 void write_BDD_to_mxarray(BDDSys* sys, DdNode* bdd, mxArray** array, char setting);
 DdNode* read_BDD_from_mxarray(BDDSys* sys, const mxArray* array, char setting);
+void read_mex_list(NumList* list, const mxArray* mexList);
+void read_set_list(NumList* list, const mxArray* mexList);
 
 BDDSysList* allocated_BDDs;
 const uint BDD_alloc_buffer = 10;
@@ -217,17 +219,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                array_init(new_enc, NumList, state_var_num, var_buffer);
                mxArray* cell = mxGetCell(s_enc_array, i);
                int size = mxGetNumberOfElements(cell);
-               double* list_ptr = mxGetPr(cell);
-               for (int k = 0; k < size; k++)
-                    array_set(new_enc, k, (uint)list_ptr[k]);
+               read_mex_list(new_enc, cell);
                int len_diff = state_var_num - size;
                // pad with zeros
                if (len_diff > 0)
                     zeropad(new_enc, size, len_diff);
-               mexPrintf("Read ");
-               for (int k = 0; k < array_len(new_enc); k++)
-                    mexPrintf("%d", array_get(new_enc, k));
-               mexPrintf("\n");
+               // mexPrintf("Read ");
+               // for (int k = 0; k < array_len(new_enc); k++)
+               //      mexPrintf("%d", array_get(new_enc, k));
+               // mexPrintf("\n");
                array_set(s_encodings, i, new_enc);
           }
           uint action_var_num = (uint)mxGetScalar(prhs[4]);
@@ -241,10 +241,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                mxArray* cell = mxGetCell(a_enc_array, i);
                int size = mxGetNumberOfElements(cell);
                array_init(list, NumList, action_var_num, var_buffer);
-               double* list_ptr = (double*)mxGetData(cell);
-               for (int k = 0; k < array_len(list); k++)
-                    array_set(list, k, (uint)list_ptr[k]);
-
+               read_mex_list(list, cell);
                int len_diff = action_var_num - size;
                // pad with zeros
                if (len_diff > 0)
@@ -268,6 +265,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           *output_ptr = array_len(allocated_BDDs);
           array_free(a_encodings);
           array_free(s_encodings);
+          return;
      }
      else
      {
@@ -295,8 +293,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           uint action = (uint)mxGetScalar(prhs[2]) - 1;
           uint new_var_num = (uint)mxGetScalar(prhs[3]);
           array_init(encoding, NumList, new_var_num, var_buffer);
-          uint enc_len = MAX(mxGetN(prhs[4]), mxGetM(prhs[4]));
-          array_cpy(encoding, 0, (uint*)mxGetData(prhs[4]), sizeof(uint)*enc_len);
+          uint enc_len = mxGetNumberOfElements(prhs[4]);
+          read_mex_list(encoding, prhs[4]);
           uint len_diff = new_var_num - enc_len;
           // mexPrintf("Padding\n");
           if (len_diff > 0)
@@ -316,13 +314,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           uint new_var_num = (uint)mxGetScalar(prhs[3]);
           uint enc_len = mxGetNumberOfElements(prhs[4]);
           array_init(encoding, NumList, enc_len, var_buffer);
-          uint* ptr = (uint*)mxGetData(prhs[4]);
-          // mexPrintf("Read encoding: ");
-          for (int i = 0; i < enc_len; i++)
-          {
-               array_set(encoding, i, (uint)ptr[i]);
-               // mexPrintf("%d", array_get(encoding, i));
-          }
+          read_mex_list(encoding, prhs[4]);
           // mexPrintf("\n");
           uint len_diff = new_var_num - enc_len;
           // mexPrintf("Padding by %d\n", len_diff);
@@ -353,9 +345,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           uint ind = (uint)mxGetScalar(prhs[2]) - 1;
           uint enc_len = mxGetNumberOfElements(prhs[3]);
           array_init(encoding, NumList, enc_len, var_buffer);
-          uint* ptr = (uint*)mxGetData(prhs[3]);
-          for (int i = 0; i < enc_len; i++)
-               array_set(encoding, i, ptr[i]);
+          read_mex_list(encoding, prhs[3]);
           // array_cpy(encoding, 0, (uint*)mxGetData(prhs[3]), sizeof(uint)*enc_len);
           uint len_diff = given_sys->s_var_num - enc_len;
           if (len_diff > 0)
@@ -380,23 +370,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 states or action not in system references
           */
           uint trans_num = mxGetNumberOfElements(prhs[2]);
-          double* in_states_ptr = mxGetPr(prhs[2]);
           array_init(in_states, NumList, trans_num, 1);
-          double* actions_ptr = mxGetPr(prhs[3]);
           array_init(actions, NumList, trans_num, 1);
-          double* out_states_ptr = mxGetPr(prhs[4]);
           array_init(out_states, NumList, trans_num, 1);
-          for (int i = 0; i < trans_num; i++)
-          {
-               array_set(in_states, i, (uint)in_states_ptr[i] - 1);
-               array_set(actions, i, (uint)actions_ptr[i] - 1);
-               array_set(out_states, i, (uint)out_states_ptr[i] - 1);
-               // mexPrintf("C Adding trans: (%d, %d, %d)\n",
-               //           array_get(in_states, i),
-               //           array_get(actions, i),
-               //           array_get(out_states, i));
-               // mexEvalString("drawnow;");
-          }
+          read_set_list(in_states, prhs[2]);
+          read_set_list(actions, prhs[3]);
+          read_set_list(out_states, prhs[4]);
 
           // mexPrintf("Adding %d transitions\n", trans_num);
                // mexPrintf("Adding a transition (%d, %d, %d)\n", (uint)in_states[i], (uint)actions[i], (uint)out_states[i]);
@@ -409,14 +388,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           state
           */
           // mexPrintf("Gets in\n");
-          double* input = mxGetPr(prhs[2]);
           uint state_num = mxGetNumberOfElements(prhs[2]);
           array_init(states, NumList, state_num, s_buffer);
-          for (int i = 0; i < state_num; i++)
-          {
-               // mexPrintf("Read %d\n", (uint)input[i]);
-               array_set(states, i, (uint)input[i] - 1);
-          }
+          read_set_list(states, prhs[2]);
           // mexPrintf("Getting transitions\n");
           DdNode* transitions = get_trans_with_s(given_sys, states);
           array_free(states);
@@ -428,13 +402,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           uint trans_num = (*transition_parts)[0];
 
 
-          if (nlhs != 3)
+          if (nlhs > 3)
           {
-               // TODO: Output argument errors
+               mexErrMsgIdAndTxt("mexBDD:get_trans_with_s", "Too many output arguments");
           }
           // mexPrintf("Giving output\n");
           // create outputs
-          for (int i = 0; i < 3; i++)
+          for (int i = 0; i < nlhs; i++)
           {
                plhs[i] = mxCreateDoubleMatrix(trans_num, 1, mxREAL);
                double* ptr = (double*)mxGetData(plhs[i]);
@@ -454,10 +428,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           state
           */
           uint state_num = mxGetNumberOfElements(prhs[2]);
-          double* input = mxGetPr(prhs[2]);
           array_init(states, NumList, state_num, 1);
-          for (int i = 0; i < state_num; i++)
-               array_set(states, i, (uint)input[i]-1);
+          read_set_list(states, prhs[2]);
           rm_trans_with_s(given_sys, states);
      }
      else if (strcmp(command, "add_pg") == 0)
@@ -471,13 +443,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           uint G_len = mxGetNumberOfElements(prhs[3]);
           array_init(U, NumList, U_len, 1);
           array_init(G, NumList, G_len, 1);
-          uint* output_U = (uint*)mxGetPr(prhs[2]);
-          double* output_G = mxGetPr(prhs[3]);
           // mexPrintf("Setting groups\n");
-          for (int i = 0; i < U_len; i++)
-               array_set(U, i, (uint)output_U[i] - 1);
-          for (int i = 0; i < G_len; i++)
-               array_set(G, i, (uint)output_G[i] - 1);
+          read_set_list(U, prhs[2]);
+          read_set_list(G, prhs[3]);
           // mexPrintf("Adding groups\n");
           add_progress_group(given_sys, U, G);
           array_free(U);
@@ -540,23 +508,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           uint U_len = mxGetNumberOfElements(prhs[2]);
           uint G_len = mxGetNumberOfElements(prhs[3]);
           // mexPrintf("Reading groups of length: U=%d,G=%d\n", U_len, G_len);
-          uint* input_U = (uint*)mxGetData(prhs[2]);
-          double* input_G = mxGetPr(prhs[3]);
           array_init(U, NumList, U_len, 1);
           array_init(G, NumList, G_len, 1);
-          // mexPrintf("U group: ");
-          for (int i = 0; i < U_len; i++)
-          {
-               // mexPrintf("%d ", (uint)input_U[i]);
-               array_set(U, i, (uint)input_U[i] - 1);
-          }
-          // mexPrintf("\n");
-          // mexPrintf("G group: ");
-          for (int i = 0; i < G_len; i++)
-          {
-               // mexPrintf("%d ", (uint)input_G[i]);
-               array_set(G, i, (uint)input_G[i] - 1);
-          }
+          read_set_list(U, prhs[2]);
+          read_set_list(G, prhs[3]);
           // mexPrintf("\n");
           int has_sup = has_superior_pg(given_sys, U, G);
           array_free(U);
@@ -580,7 +535,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           Read arguments:
           indices of progress groups, state elements to add
           */
-          double* input_inds = mxGetPr(prhs[2]);
           uint ind_len = mxGetNumberOfElements(prhs[2]);
           if (ind_len == 0)
           {
@@ -588,12 +542,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                goto end_of_mex;
           }
           array_init(inds, NumList, ind_len, 1);
-          for (int i = 0; i < ind_len; i++)
-          {
-               // mexPrintf("Read index %d\n", (uint)input_inds[i]);
-               array_set(inds, i, (uint)input_inds[i]-1);
-          }
-          double* input_states = mxGetPr(prhs[3]);
+          read_set_list(inds, prhs[2]);
           uint state_num = mxGetNumberOfElements(prhs[3]);
           if (state_num == 0)
           {
@@ -602,11 +551,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                goto end_of_mex;
           }
           array_init(states, NumList, state_num, 1);
-          for (int i = 0; i < state_num; i++)
-          {
-               // mexPrintf("Read state %d\n", (uint)input_states[i]);
-               array_set(states, i, (uint)input_states[i] - 1);
-          }
+          read_set_list(states, prhs[3]);
           add_to_pg(given_sys, inds, states);
 
           array_free(inds);
@@ -618,14 +563,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           Read arguments:
           members to check if inferior pg group
           */
-          uint* input_states = (uint*)mxGetData(prhs[2]);
           uint state_num = mxGetNumberOfElements(prhs[2]);
           array_init(states, NumList, state_num, 1);
-          for (int i = 0; i < state_num; i++)
-          {
-               // mexPrintf("%d\n", input_states[i]-1);
-               array_set(states, i, input_states[i] - 1);
-          }
+          read_set_list(states, prhs[2]);
           // mexPrintf("G group: ");
           // for (int i = 0; i < state_num; i++)
           //      mexPrintf("%d ", array_get(states, i));
@@ -658,16 +598,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                ID of system to free
           */
           uint ID = (uint)mxGetScalar(prhs[1]) - 1;
-          if (ID < array_len(allocated_BDDs))
+          if (ID >= 0 && ID < array_len(allocated_BDDs))
           {
                free_system(array_get(allocated_BDDs, ID));
-               array_set(allocated_BDDs, ID, NULL);
+               array_remove(allocated_BDDs, ID);
           }
           else
-          {
-               //TODO: ERROR BAD INDEX
-          }
-
+               mexWarnMsgIdAndTxt("mexBDD:TransSystRemoval", "Index out of bounds");
      }
      else if (strcmp(command, "pre") == 0)
      {
@@ -1021,8 +958,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      }
      else
      {
-          // unknown command
-          // TODO: Error
+          char message[200];
+          strcat(message, "Unknown command given: '");
+          strcat(message, command);
+          strcat(message, "'");
+          mexWarnMsgIdAndTxt("mexBDD:CommandInterpretation", message);
      }
 
      end_of_mex:
@@ -1056,6 +996,18 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
      sys.manager = Cudd_Init((int)(2*var_num + a_var_num),0,CUDD_UNIQUE_SLOTS,CUDD_CACHE_SLOTS,0);
      // Cudd_AutodynEnable(sys.manager, reorder_alg);
      // Gather variables and allocate variable lists
+     mexPrintf("Creating state in variables\n");
+     array_init(s_in_vars, BDDlist, sys.s_var_num, var_buffer);
+     array_init(s_in_inds, NumList, sys.s_var_num, var_buffer);
+     sys.s_in_vars = s_in_vars;
+     sys.s_in_inds = s_in_inds;
+     array_make_persist(sys.s_in_vars);
+     array_make_persist(sys.s_in_inds);
+     for (int i = 0; i < sys.s_var_num; i++)
+     {
+          array_set(sys.s_in_vars, i, Cudd_bddIthVar(sys.manager, i));
+          array_set(sys.s_in_inds, i, i);
+     }
      mexPrintf("Creating action variables\n");
      array_init(a_vars, BDDlist, sys.a_var_num, var_buffer);
      array_init(a_inds, NumList, sys.a_var_num, var_buffer);
@@ -1065,21 +1017,10 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
      array_make_persist(sys.a_inds);
      for (int i = 0; i < sys.a_var_num; i++)
      {
-          array_set(sys.a_vars, i, Cudd_bddIthVar(sys.manager, i));
-          array_set(sys.a_inds, i, i);
+          array_set(sys.a_vars, i, Cudd_bddIthVar(sys.manager, i + sys.s_var_num));
+          array_set(sys.a_inds, i, i + sys.s_var_num);
      }
      mexPrintf("Creating state variables\n");
-     array_init(s_in_vars, BDDlist, sys.s_var_num, var_buffer);
-     array_init(s_in_inds, NumList, sys.s_var_num, var_buffer);
-     sys.s_in_vars = s_in_vars;
-     sys.s_in_inds = s_in_inds;
-     array_make_persist(sys.s_in_vars);
-     array_make_persist(sys.s_in_inds);
-     for (int i = 0; i < sys.s_var_num; i++)
-     {
-          array_set(sys.s_in_vars, i, Cudd_bddIthVar(sys.manager, i + sys.a_var_num));
-          array_set(sys.s_in_inds, i, i+sys.a_var_num);
-     }
      array_init(s_out_vars, BDDlist, sys.s_var_num, var_buffer);
      array_init(s_out_inds, NumList, sys.s_var_num, var_buffer);
      sys.s_out_vars = s_out_vars;
@@ -1088,8 +1029,8 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
      array_make_persist(sys.s_out_inds);
      for (int i = 0; i < sys.s_var_num; i++)
      {
-          array_set(sys.s_out_vars, i, Cudd_bddIthVar(sys.manager, i + sys.a_var_num + sys.s_var_num));
-          array_set(sys.s_out_inds, i, i + sys.a_var_num + sys.s_var_num);
+          array_set(sys.s_out_vars, i, Cudd_bddIthVar(sys.manager, i + sys.s_var_num + sys.a_var_num));
+          array_set(sys.s_out_inds, i, i + sys.s_var_num + sys.a_var_num);
      }
      // save and allocate encodings and add states to sets
      mexPrintf("Allocating encoding lists\n");
@@ -1201,7 +1142,7 @@ void add_action(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
           for (int i = 0; i < var_diff; i++)
           {
                // create new var
-               DdNode* new_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num);
+               DdNode* new_var = Cudd_bddNewVarAtLevel(sys->manager, sys->s_var_num + sys->a_var_num);
                array_pushback(sys->a_vars, new_var);
                array_pushback(sys->a_inds, Cudd_ReadSize(sys->manager)-1);
 
@@ -1290,10 +1231,10 @@ void add_state(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
                // mexPrintf("Adding variable: %d\n", i);
                // mexEvalString("drawnow;");
                // create new var
-               DdNode* new_in_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num + sys->s_var_num);
+               DdNode* new_in_var = Cudd_bddNewVarAtLevel(sys->manager, sys->s_var_num);
                array_pushback(sys->s_in_vars, new_in_var);
                array_pushback(sys->s_in_inds, Cudd_ReadSize(sys->manager)-1);
-               DdNode* new_out_var = Cudd_bddNewVar(sys->manager);
+               DdNode* new_out_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num + 2*sys->s_var_num);
                array_pushback(sys->s_out_vars, new_out_var);
                array_pushback(sys->s_out_inds, Cudd_ReadSize(sys->manager)-1);
 
@@ -1525,13 +1466,13 @@ void rm_trans_with_s(BDDSys* sys, NumList* states)
 
 void add_progress_group(BDDSys* sys, NumList* U, NumList* G)
 {
-     mexPrintf("Read\n");
-     for (int i = 0; i < array_len(U); i++)
-          mexPrintf("%d ", array_get(U, i));
-     mexPrintf("\n");
-     for (int i = 0; i < array_len(G); i++)
-          mexPrintf("%d ", array_get(G, i));
-     mexPrintf("\n");
+     // mexPrintf("Read\n");
+     // for (int i = 0; i < array_len(U); i++)
+     //      mexPrintf("%d ", array_get(U, i));
+     // mexPrintf("\n");
+     // for (int i = 0; i < array_len(G); i++)
+     //      mexPrintf("%d ", array_get(G, i));
+     // mexPrintf("\n");
      DdNode* U_bdd = makeSet(sys->manager, array_list(sys->a_vars), sys->a_var_num, array_list(U), array_len(U), sys->a_encs);
      DdNode* G_bdd = makeSet(sys->manager, array_list(sys->s_out_vars), sys->s_var_num, array_list(G), array_len(G), sys->s_encs);
      mexPrintf("Made BDDs of groups\n");
@@ -1570,13 +1511,15 @@ void add_progress_group(BDDSys* sys, NumList* U, NumList* G)
 
 void rm_progress_group(BDDSys* sys, uint index)
 {
-     if (index < array_len(sys->pg_U) && array_get(sys->pg_U, index) != NULL)
+     if (index >= 0 && index < array_len(sys->pg_U))
      {
           Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_U, index));
           Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_G, index));
-          array_set(sys->pg_U, index, NULL);
-          array_set(sys->pg_G, index, NULL);
+          array_remove(sys->pg_U, index);
+          array_remove(sys->pg_G, index);
      }
+     else
+          mexWarnMsgIdAndTxt("mexBDD:ProgressGroupRemoval", "No group removed. Index out of bounds");
 }
 
 int has_superior_pg(BDDSys* sys, NumList* U, NumList* G)
@@ -1681,8 +1624,8 @@ uint** read_transitions(BDDSys* sys, DdNode* T)
 
      uint** outputs = mxMalloc(sizeof(uint*)*4);
      outputs[0] = &trans_num;
-     outputs[1] = actions;
-     outputs[2] = in_states;
+     outputs[1] = in_states;
+     outputs[2] = actions;
      outputs[3] = out_states;
 
      NumList** intervals = mxMalloc(sizeof(NumList*)*3);
@@ -1690,13 +1633,13 @@ uint** read_transitions(BDDSys* sys, DdNode* T)
      intervals[1] = sys->a_inds;
      intervals[2] = sys->s_out_inds;
      array_init(cube_inds, NumList, 0, sys->a_var_num + 2*sys->s_var_num);
-     for (int i = 0; i < sys->a_var_num; i++)
-     {
-          array_pushback(cube_inds, array_get(intervals[1], i));
-     }
      for (int i = 0; i < sys->s_var_num; i++)
      {
           array_pushback(cube_inds, array_get(intervals[0], i));
+     }
+     for (int i = 0; i < sys->a_var_num; i++)
+     {
+          array_pushback(cube_inds, array_get(intervals[1], i));
      }
      for (int i = 0; i < sys->s_var_num; i++)
      {
@@ -1917,4 +1860,48 @@ void write_BDD_to_mxarray(BDDSys* sys, DdNode* bdd, mxArray** array, char settin
           ptr[i] = (double)set_parts[1][i] + 1;
      mxFree(set_parts[1]);
      mxFree(set_parts);
+}
+
+void read_mex_list(NumList* list, const mxArray* mexList)
+{
+     int N = mxGetNumberOfElements(mexList);
+     if (mxIsDouble(mexList))
+     {
+          double* ptr = mxGetPr(mexList);
+          for (int i = 0; i < N; i++)
+               array_set(list, i, (uint)ptr[i]);
+     }
+     else if (mxIsUint32(mexList))
+     {
+          uint* ptr = (uint*)mxGetData(mexList);
+          for (int i = 0; i < N; i++)
+               array_set(list, i, ptr[i]);
+     }
+     else
+     {
+          mexErrMsgIdAndTxt("BDDmex:read_mex_list",
+          "Input arguments given in incorrect format. Only double and uint32 arrays supported");
+     }
+}
+
+void read_set_list(NumList* list, const mxArray* mexList)
+{
+     int N = mxGetNumberOfElements(mexList);
+     if (mxIsDouble(mexList))
+     {
+          double* ptr = mxGetPr(mexList);
+          for (int i = 0; i < N; i++)
+               array_set(list, i, (uint)ptr[i] - 1);
+     }
+     else if (mxIsUint32(mexList))
+     {
+          uint* ptr = (uint*)mxGetData(mexList);
+          for (int i = 0; i < N; i++)
+               array_set(list, i, ptr[i] - 1);
+     }
+     else
+     {
+          mexErrMsgIdAndTxt("BDDmex:read_set_list",
+          "Input arguments given in incorrect format. Only double and uint32 arrays supported");
+     }
 }

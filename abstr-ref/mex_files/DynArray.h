@@ -89,6 +89,13 @@
         array_pushback(ARRAY, ELEMENT);\
 }
 
+#define array_remove(ARRAY, IND)\
+{\
+    for (int i = IND+1; i < array_len(ARRAY); i++)\
+        ARRAY->list[i-1] = ARRAY->list[i];\
+    ARRAY->size--;\
+}
+
 #define array_len(ARRAY) ARRAY->size
 #define array_type(ARRAY) __typeof__(*ARRAY->list)
 #define array_list(ARRAY) ARRAY->list

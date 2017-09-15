@@ -6,7 +6,7 @@ ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
 opt_settings.mode = 'sdsos';
 opt_settings.max_deg = 4;
 
-system_setting = TransSyst.bdd_set;
+system_setting = TransSyst.sparse_set;
 encoding_setting = BDDSystem.split_enc;
 
 % max # of synthesis-refinement steps
@@ -80,7 +80,7 @@ iter = 0;
 max_time = 0.5*3600;
 data = zeros(0, 4);
 elapsed_time = 0;
-part.ts.bdd_sys.dyn_reordering(true);
+%part.ts.bdd_sys.dyn_reordering(true);
 split_time = 0;
 prime_time = 0;
 while true
