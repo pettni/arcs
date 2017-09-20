@@ -6,7 +6,7 @@ ops = sdpsettings('solver', 'mosek', 'cachesolvers', 1, 'verbose', 0);
 opt_settings.mode = 'sdsos';
 opt_settings.max_deg = 4;
 
-system_setting = TransSyst.sparse_set;
+system_setting = TransSyst.bdd_set;
 encoding_setting = BDDSystem.split_enc;
 
 % max # of synthesis-refinement steps
@@ -80,7 +80,7 @@ iter = 0;
 max_time = 0.5*3600;
 data = zeros(0, 4);
 elapsed_time = 0;
-%part.ts.bdd_sys.dyn_reordering(true);
+part.ts.bdd_sys.dyn_reordering(true);
 split_time = 0;
 prime_time = 0;
 while true
@@ -121,9 +121,10 @@ while true
   split_time = toc - split_time;
   
   iter = iter + 1;
+  part.ts.bdd_sys.read_var_order();
 end
 
-save('split_reorder_data.mat', 'data');
+save('split_new_old_no_reorder_data.mat', 'data');
 % Split final set to eliminate Zeno
 % if split_inv
 %   inv_set = part.ts.win_primal(part.get_cells_with_ap({'SET'}), ...

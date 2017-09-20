@@ -956,6 +956,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           else
                Cudd_AutodynDisable(given_sys->manager);
      }
+     else if (strcmp(command, "read_var_order") == 0)
+     {
+          mexPrintf("in states: ");
+          for (int i = 0; i < array_len(given_sys->s_in_vars); i++)
+               mexPrintf("%d ", Cudd_ReadPerm(given_sys->manager, array_get(given_sys->s_in_inds, i)));
+          mexPrintf("; actions: ");
+          for (int i = 0; i < array_len(given_sys->a_vars); i++)
+               mexPrintf("%d ", Cudd_ReadPerm(given_sys->manager, array_get(given_sys->a_inds, i)));
+          mexPrintf("; out states: ");
+          for (int i = 0; i < array_len(given_sys->s_out_vars); i++)
+               mexPrintf("%d ", Cudd_ReadPerm(given_sys->manager, array_get(given_sys->s_out_inds, i)));
+          mexPrintf("\n");
+     }
      else
      {
           char message[200];
@@ -996,18 +1009,6 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
      sys.manager = Cudd_Init((int)(2*var_num + a_var_num),0,CUDD_UNIQUE_SLOTS,CUDD_CACHE_SLOTS,0);
      // Cudd_AutodynEnable(sys.manager, reorder_alg);
      // Gather variables and allocate variable lists
-     mexPrintf("Creating state in variables\n");
-     array_init(s_in_vars, BDDlist, sys.s_var_num, var_buffer);
-     array_init(s_in_inds, NumList, sys.s_var_num, var_buffer);
-     sys.s_in_vars = s_in_vars;
-     sys.s_in_inds = s_in_inds;
-     array_make_persist(sys.s_in_vars);
-     array_make_persist(sys.s_in_inds);
-     for (int i = 0; i < sys.s_var_num; i++)
-     {
-          array_set(sys.s_in_vars, i, Cudd_bddIthVar(sys.manager, i));
-          array_set(sys.s_in_inds, i, i);
-     }
      mexPrintf("Creating action variables\n");
      array_init(a_vars, BDDlist, sys.a_var_num, var_buffer);
      array_init(a_inds, NumList, sys.a_var_num, var_buffer);
@@ -1017,10 +1018,22 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
      array_make_persist(sys.a_inds);
      for (int i = 0; i < sys.a_var_num; i++)
      {
-          array_set(sys.a_vars, i, Cudd_bddIthVar(sys.manager, i + sys.s_var_num));
-          array_set(sys.a_inds, i, i + sys.s_var_num);
+          array_set(sys.a_vars, i, Cudd_bddIthVar(sys.manager, i));
+          array_set(sys.a_inds, i, i);
      }
-     mexPrintf("Creating state variables\n");
+     mexPrintf("Creating state in variables\n");
+     array_init(s_in_vars, BDDlist, sys.s_var_num, var_buffer);
+     array_init(s_in_inds, NumList, sys.s_var_num, var_buffer);
+     sys.s_in_vars = s_in_vars;
+     sys.s_in_inds = s_in_inds;
+     array_make_persist(sys.s_in_vars);
+     array_make_persist(sys.s_in_inds);
+     for (int i = 0; i < sys.s_var_num; i++)
+     {
+          array_set(sys.s_in_vars, i, Cudd_bddIthVar(sys.manager, i + sys.a_var_num));
+          array_set(sys.s_in_inds, i, i + sys.a_var_num);
+     }
+     mexPrintf("Creating state out variables\n");
      array_init(s_out_vars, BDDlist, sys.s_var_num, var_buffer);
      array_init(s_out_inds, NumList, sys.s_var_num, var_buffer);
      sys.s_out_vars = s_out_vars;
@@ -1142,7 +1155,7 @@ void add_action(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
           for (int i = 0; i < var_diff; i++)
           {
                // create new var
-               DdNode* new_var = Cudd_bddNewVarAtLevel(sys->manager, sys->s_var_num + sys->a_var_num);
+               DdNode* new_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num);
                array_pushback(sys->a_vars, new_var);
                array_pushback(sys->a_inds, Cudd_ReadSize(sys->manager)-1);
 
@@ -1231,7 +1244,7 @@ void add_state(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
                // mexPrintf("Adding variable: %d\n", i);
                // mexEvalString("drawnow;");
                // create new var
-               DdNode* new_in_var = Cudd_bddNewVarAtLevel(sys->manager, sys->s_var_num);
+               DdNode* new_in_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num + sys->s_var_num);
                array_pushback(sys->s_in_vars, new_in_var);
                array_pushback(sys->s_in_inds, Cudd_ReadSize(sys->manager)-1);
                DdNode* new_out_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num + 2*sys->s_var_num);
@@ -1494,10 +1507,7 @@ void add_progress_group(BDDSys* sys, NumList* U, NumList* G)
           if (Cudd_EquivDC(sys->manager, U_bdd, array_get(sys->pg_U, i), Cudd_Not(array_get(sys->pg_U, i)))
                && Cudd_EquivDC(sys->manager, G_bdd, array_get(sys->pg_G, i), Cudd_Not(array_get(sys->pg_G, i))))
           {
-               Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_U, i));
-               Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_G, i));
-               array_set(sys->pg_U, i, NULL);
-               array_set(sys->pg_G, i, NULL);
+               rm_progress_group(sys, i);
           }
      }
 
@@ -1822,26 +1832,19 @@ DdNode* makeSet(DdManager* manager, DdNode** vars, int var_num, int* inds, int n
 DdNode* read_BDD_from_mxarray(BDDSys* sys, const mxArray* array, char setting)
 {
      uint len = mxGetNumberOfElements(array);
-     double* input = mxGetPr(array);
-     uint* inds = mxMalloc(sizeof(uint)*len);
-
-     for (int i = 0; i < len; i++)
-     {
-          inds[i] = (uint)input[i] - 1;
-     }
+     array_init(inds, NumList, len, 1);
+     read_set_list(inds, array);
      DdNode* bdd;
      if (setting == 's')
-     {
-          bdd = makeSet(sys->manager, array_list(sys->s_out_vars), sys->s_var_num, inds, len, sys->s_encs);
-     }
+          bdd = makeSet(sys->manager, array_list(sys->s_out_vars), sys->s_var_num, array_list(inds), len, sys->s_encs);
      else if (setting == 'a')
-          bdd = makeSet(sys->manager, array_list(sys->a_vars), sys->a_var_num, inds, len, sys->a_encs);
+          bdd = makeSet(sys->manager, array_list(sys->a_vars), sys->a_var_num, array_list(inds), len, sys->a_encs);
      else
      {
-          mxFree(inds);
+          array_free(inds);
           return NULL;
      }
-     mxFree(inds);
+     array_free(inds);
 
      return bdd;
 }

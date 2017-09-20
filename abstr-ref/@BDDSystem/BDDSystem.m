@@ -295,6 +295,10 @@ classdef BDDSystem < handle
     function count = count_system_nodes(sys)
       count = mexBDD('count_system_nodes', sys.BDD_system_ID);
     end
+    
+    function read_var_order(sys)
+      mexBDD('read_var_order', sys.BDD_system_ID);
+    end
   end
 end
 
