@@ -20,6 +20,13 @@ classdef BDDSystem < handle
     % BDD structure ID
     % Is identifier in list of BDD systems in C
     BDD_system_ID = 0;
+    
+    % Extra fields used when saving object
+    s_in_inds = [];
+    s_out_inds = [];
+    a_inds = [];
+    BDD_file_string = '';
+    pg_num = 0;
   end
   
   properties (Constant)
@@ -298,6 +305,65 @@ classdef BDDSystem < handle
     
     function read_var_order(sys)
       mexBDD('read_var_order', sys.BDD_system_ID);
+    end
+    
+    function sobj = saveobj(obj)
+      sobj = obj;
+      % returns data fields to save (as cell array) and creates
+      % temporary file temp_sys.dump
+      save_data = mexBDD('save', obj.BDD_system_ID);
+      
+      % save data fields
+      sobj.s_in_inds = save_data{1};
+      sobj.s_out_inds = save_data{2};
+      sobj.a_inds = save_data{3};
+      sobj.pg_num = save_data{4};
+      
+      % read and save BDDs of system as string
+      s = dir('temp_sys.dump');
+      sobj.BDD_file_string = blanks(s.bytes);
+      fileID = fopen('temp_sys.dump');
+      pos = 1;
+      while ~feof(fileID)
+        line = fgets(fileID);
+        line_len = length(line);
+        sobj.BDD_file_string(pos:(pos+line_len-1)) = line;
+        pos = pos + line_len;
+      end
+      fclose(fileID);
+      delete temp_sys.dump
+      if pos < length(obj.BDD_file_string)
+        sobj.BDD_file_string = sobj.BDD_file_string(1:(pos-1));
+      end
+    end
+      
+  end
+  
+  methods (Static)
+    function lobj = loadobj(obj)
+      disp('hello');
+      s.s_var_num = obj.s_var_num;
+      s.a_var_num = obj.a_var_num;
+      
+      s.state_encodings = obj.state_encodings;
+      s.action_encodings = obj.action_encodings;
+      
+      s.s_in_inds = obj.s_in_inds;
+      obj.s_in_inds = [];
+      s.s_out_inds = obj.s_out_inds;
+      obj.s_out_inds = [];
+      s.a_inds = obj.a_inds;
+      obj.a_inds = [];
+      s.pg_num = obj.pg_num;
+      
+      % create dump file for reading by dddmp
+      dumpID = fopen('temp_sys.dump', 'w');
+      fprintf(dumpID, '%s', obj.BDD_file_string);
+      fclose(dumpID);
+      obj.BDD_file_string = [];
+      
+      lobj = obj; 
+      lobj.BDD_system_ID = mexBDD('load', s);
     end
   end
 end

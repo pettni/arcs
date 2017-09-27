@@ -2,19 +2,21 @@
 #include<stdlib.h>
 #include<math.h>
 #include<stdint.h>
+#include "util.h"
 #include "cudd.h"
+#include "dddmp.h"
 #include "mex.h"
 #include "matrix.h"
 #include "system_types.h"
 #include "set_calcs.h"
 #include "DynArray.h"
 
-#define MAX(x1, x2) x1 < x2 ? x2 : x1
-
 void free_all();
 void free_system(BDDSys* system_to_free);
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
 BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _a_encs);
+BDDSys* loadBDDSys(uint s_var_num, mxArray* _s_encs, mxArray* _s_in_inds, mxArray* _s_out_inds,
+                   uint a_var_num, mxArray* _a_encs, mxArray* _a_inds, uint pg_num);
 // pads the uint list with the amount of zeros specified by spaces
 void zeropad(NumList* list, uint pos, uint pad_len);
 void add_action(BDDSys* sys, uint index, NumList* enc, uint new_var_num);
@@ -129,6 +131,7 @@ void free_system(BDDSys* system_to_free)
           array_free(system_to_free->a_vars);
           array_free(system_to_free->a_inds);
           mexPrintf("Clearing s_encodings\n");
+          mexEvalString("drawnow;");
           for (int i = 0; i < array_len(system_to_free->s_encs); i++)
           {
                mexPrintf("Clearing s_encoding %d\n", i);
@@ -137,37 +140,47 @@ void free_system(BDDSys* system_to_free)
                     array_free(array_get(system_to_free->s_encs, i));
           }
           mexPrintf("Clearing s_encoding list\n");
+          mexEvalString("drawnow;");
           array_free(system_to_free->s_encs);
 
           mexPrintf("Clearing a_encodings\n");
+          mexEvalString("drawnow;");
           for (int i = 0; i < array_len(system_to_free->a_encs); i++)
           {
                mexPrintf("Clearing a_encoding %d\n", i);
+               mexEvalString("drawnow;");
                if (array_get(system_to_free->a_encs, i) != NULL)
                     array_free(array_get(system_to_free->a_encs, i));
           }
           mexPrintf("Clearing a_encoding list\n");
+          mexEvalString("drawnow;");
           array_free(system_to_free->a_encs);
           mexPrintf("Clearing enc_state_map\n");
+          mexEvalString("drawnow;");
           array_free(system_to_free->enc_state_map);
           mexPrintf("Clearing pg_U\n");
+          mexEvalString("drawnow;");
           for (int i = 0; i < array_len(system_to_free->pg_U); i++)
           {
                mexPrintf("Clearing U group %d\n", i);
+               mexEvalString("drawnow;");
                if (array_get(system_to_free->pg_U, i) != NULL)
                     Cudd_RecursiveDeref(system_to_free->manager, array_get(system_to_free->pg_U, i));
           }
           array_free(system_to_free->pg_U);
           mexPrintf("Clearing pg_G\n");
+          mexEvalString("drawnow;");
           for (int i = 0; i < array_len(system_to_free->pg_G); i++)
           {
                mexPrintf("Clearing G group %d\n", i);
+               mexEvalString("drawnow;");
                if (array_get(system_to_free->pg_G, i) != NULL)
                     Cudd_RecursiveDeref(system_to_free->manager, array_get(system_to_free->pg_G, i));
           }
           array_free(system_to_free->pg_G);
           mexPrintf("Checking non-zero references: %d\n", Cudd_CheckZeroRef(system_to_free->manager));
           mexPrintf("Quitting CUDD\n");
+          mexEvalString("drawnow;");
           Cudd_Quit(system_to_free->manager);
      }
 }
@@ -198,7 +211,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
      // interpret command
      char* command = mxArrayToString(prhs[0]);
-     // mexPrintf("MexFunction called with %s\n", command);
+     mexPrintf("MexFunction called with %s\n", command);
 
      BDDSys* given_sys = NULL;
 
@@ -267,16 +280,42 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           array_free(s_encodings);
           return;
      }
+     else if (strcmp(command, "load") == 0)
+     {
+          mexPrintf("Starting load\n");
+          mexEvalString("drawnow;");
+          uint s_var_num = (uint)mxGetScalar(mxGetField(prhs[1], 0, "s_var_num"));
+          uint a_var_num = (uint)mxGetScalar(mxGetField(prhs[1], 0, "a_var_num"));
+          mexPrintf("var numbers loaded\n");
+          mexEvalString("drawnow;");
+          mxArray* s_in_inds = mxGetField(prhs[1], 0, "s_in_inds");
+          mxArray* s_out_inds = mxGetField(prhs[1], 0, "s_out_inds");
+          mxArray* a_inds = mxGetField(prhs[1], 0, "a_inds");
+          mxArray* s_encodings = mxGetField(prhs[1], 0, "state_encodings");
+          mxArray* a_encodings = mxGetField(prhs[1], 0, "action_encodings");
+          uint pg_num = (uint)mxGetScalar(mxGetField(prhs[1], 0, "pg_num"));
+          mexPrintf("Properties loaded\n");
+          mexEvalString("drawnow;");
+          BDDSys* sys = loadBDDSys(s_var_num, s_encodings, s_in_inds, s_out_inds,
+                                   a_var_num, a_encodings, a_inds, pg_num);
+          array_pushback(allocated_BDDs, sys);
+          uint system_ID = array_len(allocated_BDDs);
+
+          mexPrintf("Return new system ID : %d\n", system_ID);
+          mexEvalString("drawnow;");
+          plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+          *mxGetPr(plhs[0]) = system_ID;
+          return;
+     }
      else
      {
-          // if not given a "initialize" command, then system properties will
+          // if not given a "initialize" or "load" command, then system properties will
           // be changed or destroyed.
           // Read given system
           uint system_ID = (uint)mxGetScalar(prhs[1]) - 1;
           if (system_ID >= array_len(allocated_BDDs) || array_get(allocated_BDDs, system_ID) == NULL)
           {
-               //TODO: Prompt user of desposed or nonexistent system
-               return;
+               mexErrMsgIdAndTxt("mexBDD:SystemRetrieval", "Invalid system ID given : %d", system_ID);
           }
 
           given_sys = array_get(allocated_BDDs, system_ID);
@@ -601,10 +640,60 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           if (ID >= 0 && ID < array_len(allocated_BDDs))
           {
                free_system(array_get(allocated_BDDs, ID));
-               array_remove(allocated_BDDs, ID);
+               array_set(allocated_BDDs, ID, NULL);
           }
           else
                mexWarnMsgIdAndTxt("mexBDD:TransSystRemoval", "Index out of bounds");
+     }
+     else if (strcmp(command, "save") == 0)
+     {
+          plhs[0] = mxCreateCellMatrix(1, 4);
+          mxArray* s_in_inds_copy = mxCreateDoubleMatrix(given_sys->s_var_num, 1, mxREAL);
+          double* s_in_ptr = mxGetPr(s_in_inds_copy);
+          mxArray* s_out_inds_copy = mxCreateDoubleMatrix(given_sys->s_var_num, 1, mxREAL);
+          double* s_out_ptr = mxGetPr(s_out_inds_copy);
+          mxArray* a_inds_copy = mxCreateDoubleMatrix(given_sys->a_var_num, 1, mxREAL);
+          double* a_ptr = mxGetPr(a_inds_copy);
+          mxArray* pg_num = mxCreateDoubleMatrix(1, 1, mxREAL);
+          *mxGetPr(pg_num) = array_len(given_sys->pg_U);
+          for (int i = 0; i < given_sys->s_var_num; i++)
+          {
+               s_in_ptr[i] = array_get(given_sys->s_in_inds, i);
+               s_out_ptr[i] = array_get(given_sys->s_out_inds, i);
+          }
+          for (int i = 0; i < given_sys->a_var_num; i++)
+          {
+               a_ptr[i] = array_get(given_sys->a_inds, i);
+          }
+          mxSetCell(plhs[0], 0, s_in_inds_copy);
+          mxSetCell(plhs[0], 1, s_out_inds_copy);
+          mxSetCell(plhs[0], 2, a_inds_copy);
+          mxSetCell(plhs[0], 3, pg_num);
+
+          array_init(BDDs_to_store, BDDlist, 0, 10);
+          array_pushback(BDDs_to_store, given_sys->trans_sys);
+          mexPrintf("Storing trans: %d\n", Cudd_DagSize(given_sys->trans_sys));
+          array_pushback(BDDs_to_store, given_sys->all_states);
+          mexPrintf("Storing states: %d\n", Cudd_DagSize(given_sys->all_states));
+          array_pushback(BDDs_to_store, given_sys->all_actions);
+          mexPrintf("Storing actions: %d\n", Cudd_DagSize(given_sys->all_actions));
+          for (int i = 0; i < array_len(given_sys->pg_U); i++)
+          {
+               mexPrintf("Storing pg U group: %d\n", Cudd_DagSize(array_get(given_sys->pg_U, i)));
+               array_pushback(BDDs_to_store, array_get(given_sys->pg_U, i));
+          }
+          for (int i = 0; i < array_len(given_sys->pg_U); i++)
+          {
+               mexPrintf("Storing pg G group: %d\n", Cudd_DagSize(array_get(given_sys->pg_G, i)));
+               array_pushback(BDDs_to_store, array_get(given_sys->pg_G, i));
+          }
+          FILE* dump = fopen("temp_sys.dump", "w");
+          printf("Saving %d BDD systems\n", array_len(BDDs_to_store));
+          Dddmp_cuddBddArrayStore(given_sys->manager, NULL, array_len(BDDs_to_store),
+                                   array_list(BDDs_to_store), NULL, NULL, NULL, DDDMP_MODE_BINARY,
+                                   DDDMP_VARIDS, "temp_sys.dump", dump);
+          fclose(dump);
+          array_free(BDDs_to_store);
      }
      else if (strcmp(command, "pre") == 0)
      {
@@ -1111,6 +1200,172 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
 
      sys.trans_sys = Cudd_ReadLogicZero(sys.manager);
      Cudd_Ref(sys.trans_sys);
+
+     BDDSys* ptr = mxMalloc(sizeof(BDDSys));
+     *ptr = sys;
+     mexMakeMemoryPersistent(ptr);
+     return ptr;
+}
+
+/*
+     Load a BDD system with the given setup (var num, var indices, encs)
+*/
+BDDSys* loadBDDSys(uint var_num, mxArray* _s_encs, mxArray* _s_in_inds, mxArray* _s_out_inds,
+                    uint a_var_num, mxArray* _a_encs, mxArray* _a_inds, uint pg_num)
+{
+     BDDSys sys;
+     mexPrintf("Making system with s=%d, a=%d\n", var_num, a_var_num);
+     sys.s_var_num = var_num;
+     sys.a_var_num = a_var_num;
+     /* Start the BDD manager
+     2*var_num + a_var_num initial BDD variables
+     0 ZDD variables
+     default number of unique slots (cudd figures it out)
+     default cache size (cudd figures it out)
+     max memory 0 = unlimited */
+
+     mexPrintf("Making manager with %u\n", 2*var_num + a_var_num);
+     sys.manager = Cudd_Init((int)(2*var_num + a_var_num),0,CUDD_UNIQUE_SLOTS,CUDD_CACHE_SLOTS,0);
+     // Cudd_AutodynEnable(sys.manager, reorder_alg);
+     // Gather variables and allocate variable lists
+     mexPrintf("Creating action variables\n");
+     array_init(a_vars, BDDlist, sys.a_var_num, var_buffer);
+     array_init(a_inds, NumList, sys.a_var_num, var_buffer);
+     sys.a_vars = a_vars;
+     sys.a_inds = a_inds;
+     array_make_persist(sys.a_vars);
+     array_make_persist(sys.a_inds);
+     read_mex_list(sys.a_inds, _a_inds);
+     for (int i = 0; i < sys.a_var_num; i++)
+     {
+          uint var_ind = array_get(sys.a_inds, i);
+          array_set(sys.a_vars, i, Cudd_bddIthVar(sys.manager, var_ind));
+     }
+
+     mexPrintf("Creating state in variables\n");
+     array_init(s_in_vars, BDDlist, sys.s_var_num, var_buffer);
+     array_init(s_in_inds, NumList, sys.s_var_num, var_buffer);
+     sys.s_in_vars = s_in_vars;
+     sys.s_in_inds = s_in_inds;
+     array_make_persist(sys.s_in_vars);
+     array_make_persist(sys.s_in_inds);
+     read_mex_list(sys.s_in_inds, _s_in_inds);
+     for (int i = 0; i < sys.s_var_num; i++)
+     {
+          uint var_ind = array_get(sys.s_in_inds, i);
+          array_set(sys.s_in_vars, i, Cudd_bddIthVar(sys.manager, var_ind));
+     }
+
+     mexPrintf("Creating state out variables\n");
+     array_init(s_out_vars, BDDlist, sys.s_var_num, var_buffer);
+     array_init(s_out_inds, NumList, sys.s_var_num, var_buffer);
+     sys.s_out_vars = s_out_vars;
+     sys.s_out_inds = s_out_inds;
+     array_make_persist(sys.s_out_vars);
+     array_make_persist(sys.s_out_inds);
+     read_mex_list(sys.s_out_inds, _s_out_inds);
+     for (int i = 0; i < sys.s_var_num; i++)
+     {
+          uint var_ind = array_get(sys.s_out_inds, i);
+          array_set(sys.s_out_vars, i, Cudd_bddIthVar(sys.manager, var_ind));
+     }
+     // save and allocate encodings and add states to sets
+     mexPrintf("Allocating encoding lists\n");
+     array_init(s_encs, EncList, (uint)mxGetNumberOfElements(_s_encs), s_buffer);
+     array_init(enc_map, NumList, pow(2, sys.s_var_num), pow(2, sys.s_var_num));
+
+     sys.enc_state_map = enc_map;
+
+     mexPrintf("Adding %d s encodings\n", array_len(s_encs));
+     mexEvalString("drawnow;");
+     for (int i = 0; i < mxGetNumberOfElements(_s_encs); i++)
+     {
+          mxArray* enc_cell = mxGetCell(_s_encs, i);
+          array_init(enc, NumList, mxGetNumberOfElements(enc_cell), var_buffer);
+          read_mex_list(enc, enc_cell);
+          uint len_diff = sys.s_var_num - array_len(enc);
+          if (len_diff > 0)
+               zeropad(enc, array_len(enc), len_diff);
+          array_set(s_encs, i, enc);
+          array_make_persist(enc);
+          uint key = fromBitArray(array_list(enc), sys.s_var_num);
+          array_set(sys.enc_state_map, key, (uint)i);
+          mexPrintf("%d to %d\n", key, i);
+     }
+     sys.s_encs = s_encs;
+     array_make_persist(sys.s_encs);
+     array_make_persist(sys.enc_state_map);
+
+     array_init(a_encs, EncList, mxGetNumberOfElements(_a_encs), s_buffer);
+     mexPrintf("Adding %d a encodings\n", array_len(a_encs));
+     mexEvalString("drawnow;");
+     for (int i = 0; i < array_len(a_encs); i++)
+     {
+          mexPrintf("Adding a encoding %d\n", i);
+          mexEvalString("drawnow;");
+          mxArray* enc_cell = mxGetCell(_a_encs, i);
+          array_init(enc, NumList, mxGetNumberOfElements(enc_cell), var_buffer);
+          read_mex_list(enc, enc_cell);
+          for (int j = 0; j < array_len(enc); j++)
+               mexPrintf("%d", array_get(enc, j));
+          mexPrintf("\n");
+          mexEvalString("drawnow;");
+          uint len_diff = sys.a_var_num - array_len(enc);
+          mexPrintf("Padding with %d\n", len_diff);
+          mexEvalString("drawnow;");
+          if (len_diff > 0)
+               zeropad(enc, array_len(enc), len_diff);
+          array_set(a_encs, i, enc);
+          array_make_persist(enc);
+          mexPrintf("Added a encoding %d\n", i);
+          mexEvalString("drawnow;");
+     }
+     sys.a_encs = a_encs;
+     array_make_persist(sys.a_encs);
+     // allocate pg groups
+     array_init(pg_U, BDDlist, 0, pg_buffer);
+     array_init(pg_G, BDDlist, 0, pg_buffer);
+     sys.pg_U = pg_U;
+     array_make_persist(sys.pg_U);
+     sys.pg_G = pg_G;
+     array_make_persist(sys.pg_G);
+
+
+     mexPrintf("Loading stored BDDs\n");
+     mexEvalString("drawnow");
+     FILE* stream = fopen("temp_sys.dump", "r");
+     DdNode** stored_BDDs;
+     Dddmp_cuddBddArrayLoad(sys.manager, DDDMP_ROOT_MATCHLIST, NULL, DDDMP_VAR_MATCHIDS,
+                              NULL, NULL, NULL, DDDMP_MODE_BINARY, NULL, stream, &stored_BDDs);
+     mexPrintf("Loaded stored BDDs\n");
+     mexEvalString("drawnow");
+     fclose(stream);
+
+     // restore saved BDDs
+     mexPrintf("Restoring BDDs\n");
+     mexEvalString("drawnow;");
+     sys.trans_sys = stored_BDDs[0];
+     mexPrintf("Trans size: %d\n", Cudd_DagSize(sys.trans_sys));
+     sys.all_states = stored_BDDs[1];
+     mexPrintf("States size: %d\n", Cudd_DagSize(sys.all_states));
+     sys.all_actions = stored_BDDs[2];
+     mexPrintf("Actions size: %d\n", Cudd_DagSize(sys.all_actions));
+     mexPrintf("Loaded primary BDDs\n");
+     mexEvalString("drawnow;");
+     for (int i = 0; i < pg_num; i++)
+     {
+          array_pushback(sys.pg_U, stored_BDDs[3 + i]);
+          mexPrintf("Pg U %d size: %d\n", i, Cudd_DagSize(array_get(sys.pg_U, i)));
+     }
+     for (int i = 0; i < pg_num; i++)
+     {
+          array_pushback(sys.pg_G, stored_BDDs[3 + pg_num + i]);
+          mexPrintf("Pg G %d size: %d\n", i, Cudd_DagSize(array_get(sys.pg_G, i)));
+     }
+     mexPrintf("Loaded progress groups\n");
+     mexEvalString("drawnow;");
+     mexPrintf("BDDs restored\n");
+     mexEvalString("drawnow;");
 
      BDDSys* ptr = mxMalloc(sizeof(BDDSys));
      *ptr = sys;

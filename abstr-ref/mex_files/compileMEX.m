@@ -1,1 +1,1 @@
-mex CFLAGS='-std=c99' -I'dependencies' -L'dependencies' -lcudd mexBDD.c set_calcs.c
+mex CFLAGS='-std=c11' -I'dependencies' -L'dependencies' -lcudd mexBDD.c set_calcs.c
