@@ -7,7 +7,7 @@
 #include "cudd.h"
 #include "system_types.h"
 
-#define deref(system) Cudd_RecursiveDeref(sys->manager, system);
+#define deref(system) Cudd_RecursiveDeref(get_mgr(sys), system);
 
 #define WIN_SET 1
 #define WIN_CANDIDATE_SET 2
@@ -136,89 +136,90 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* Z, DdNode* B,
 
 DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
 {
+    DdManager* manager = get_mgr(sys);
     DdNode* T = sys->trans_sys;
     DdNode* valid_transitions;
     DdNode* tmp;
 
-    DdNode* outCube = Cudd_bddComputeCube(sys->manager, array_list(sys->s_out_vars), NULL, sys->s_var_num);
+    DdNode* outCube = Cudd_bddComputeCube(manager, array_list(sys->mgr->s_out_vars), NULL, sys->mgr->s_var_num);
     Cudd_Ref(outCube);
-    DdNode* aCube = Cudd_bddComputeCube(sys->manager, array_list(sys->a_vars), NULL, sys->a_var_num);
+    DdNode* aCube = Cudd_bddComputeCube(manager, array_list(sys->mgr->a_vars), NULL, sys->mgr->a_var_num);
     Cudd_Ref(aCube);
 
     // Cudd_DebugCheck(sys->manager);
     if (quant1 == 'e' && quant2 == 'e')
     {
-        valid_transitions = Cudd_bddAnd(sys->manager, T, X_prime);
+        valid_transitions = Cudd_bddAnd(manager, T, X_prime);
         Cudd_Ref(valid_transitions);
-        tmp = Cudd_bddExistAbstract(sys->manager, valid_transitions, outCube);
+        tmp = Cudd_bddExistAbstract(manager, valid_transitions, outCube);
         Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, valid_transitions);
+        Cudd_RecursiveDeref(manager, valid_transitions);
         valid_transitions = tmp;
 
-        tmp = Cudd_bddAnd(sys->manager, valid_transitions, A);
+        tmp = Cudd_bddAnd(manager, valid_transitions, A);
         Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, valid_transitions);
+        Cudd_RecursiveDeref(manager, valid_transitions);
         valid_transitions = tmp;
-        tmp = Cudd_bddExistAbstract(sys->manager, valid_transitions, aCube);
+        tmp = Cudd_bddExistAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, valid_transitions);
+        Cudd_RecursiveDeref(manager, valid_transitions);
         valid_transitions = tmp;
     }
     else if (quant1 == 'e' && quant2 == 'a')
     {
-        DdNode* state_a_pairs_not_X = Cudd_bddAndAbstract(sys->manager, T, Cudd_Not(X_prime), outCube);
+        DdNode* state_a_pairs_not_X = Cudd_bddAndAbstract(manager, T, Cudd_Not(X_prime), outCube);
         Cudd_Ref(state_a_pairs_not_X);
 
-        DdNode* state_a_pairs_X = Cudd_bddExistAbstract(sys->manager, T, outCube);
+        DdNode* state_a_pairs_X = Cudd_bddExistAbstract(manager, T, outCube);
         Cudd_Ref(state_a_pairs_X);
 
-        valid_transitions = Cudd_bddAnd(sys->manager, state_a_pairs_X, Cudd_Not(state_a_pairs_not_X));
+        valid_transitions = Cudd_bddAnd(manager, state_a_pairs_X, Cudd_Not(state_a_pairs_not_X));
         Cudd_Ref(valid_transitions);
-        Cudd_RecursiveDeref(sys->manager, state_a_pairs_X);
-        Cudd_RecursiveDeref(sys->manager, state_a_pairs_not_X);
+        Cudd_RecursiveDeref(manager, state_a_pairs_X);
+        Cudd_RecursiveDeref(manager, state_a_pairs_not_X);
 
-        tmp = Cudd_bddAndAbstract(sys->manager, valid_transitions, A, aCube);
+        tmp = Cudd_bddAndAbstract(manager, valid_transitions, A, aCube);
         Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, valid_transitions);
+        deref(valid_transitions);
         valid_transitions = tmp;
     }
     else if(quant1 == 'a' && quant2 == 'a')
     {
-        DdNode* state_a_pairs_not_X = Cudd_bddAndAbstract(sys->manager, T, Cudd_Not(X_prime), outCube);
+        DdNode* state_a_pairs_not_X = Cudd_bddAndAbstract(manager, T, Cudd_Not(X_prime), outCube);
         Cudd_Ref(state_a_pairs_not_X);
 
-        DdNode* state_a_pairs_X = Cudd_bddExistAbstract(sys->manager, T, outCube);
+        DdNode* state_a_pairs_X = Cudd_bddExistAbstract(manager, T, outCube);
         Cudd_Ref(state_a_pairs_X);
 
-        valid_transitions = Cudd_bddAnd(sys->manager, state_a_pairs_X, Cudd_Not(state_a_pairs_not_X));
+        valid_transitions = Cudd_bddAnd(manager, state_a_pairs_X, Cudd_Not(state_a_pairs_not_X));
         Cudd_Ref(valid_transitions);
-        Cudd_RecursiveDeref(sys->manager, state_a_pairs_X);
-        Cudd_RecursiveDeref(sys->manager, state_a_pairs_not_X);
+        Cudd_RecursiveDeref(manager, state_a_pairs_X);
+        Cudd_RecursiveDeref(manager, state_a_pairs_not_X);
 
-        tmp = Cudd_bddOr(sys->manager, valid_transitions, Cudd_Not(A));
+        tmp = Cudd_bddOr(manager, valid_transitions, Cudd_Not(A));
         Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, valid_transitions);
+        Cudd_RecursiveDeref(manager, valid_transitions);
         valid_transitions = tmp;
 
-        tmp = Cudd_bddUnivAbstract(sys->manager, valid_transitions, aCube);
+        tmp = Cudd_bddUnivAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, valid_transitions);
+        deref(valid_transitions);
         valid_transitions = tmp;
     }
     else if (quant1 == 'a' && quant2 == 'e')
     {
-        tmp = Cudd_bddAndAbstract(sys->manager, T, X_prime, outCube);
+        tmp = Cudd_bddAndAbstract(manager, T, X_prime, outCube);
         Cudd_Ref(tmp);
         valid_transitions = tmp;
 
-        tmp = Cudd_bddOr(sys->manager, valid_transitions, Cudd_Not(A));
+        tmp = Cudd_bddOr(manager, valid_transitions, Cudd_Not(A));
         Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, valid_transitions);
+        Cudd_RecursiveDeref(manager, valid_transitions);
         valid_transitions = tmp;
 
-        tmp = Cudd_bddUnivAbstract(sys->manager, valid_transitions, aCube);
+        tmp = Cudd_bddUnivAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
-        Cudd_RecursiveDeref(sys->manager, valid_transitions);
+        Cudd_RecursiveDeref(manager, valid_transitions);
         valid_transitions = tmp;
     }
     else
@@ -227,8 +228,8 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
         return NULL;
     }
 
-    Cudd_RecursiveDeref(sys->manager, outCube);
-    Cudd_RecursiveDeref(sys->manager, aCube);
+    Cudd_RecursiveDeref(manager, outCube);
+    Cudd_RecursiveDeref(manager, aCube);
 
     return valid_transitions;
 }
@@ -236,36 +237,37 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
 DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
             char quant, int mode)
 {
+    DdManager* manager = get_mgr(sys);
     // calculate Y_0 = (G & B) \ Z
     DdNode* tmp;
-    DdNode* Y = Cudd_bddAnd(sys->manager, G, B);
+    DdNode* Y = Cudd_bddAnd(manager, G, B);
     Cudd_Ref(Y);
-    tmp = Cudd_bddAnd(sys->manager, Y, Cudd_Not(Z));
+    tmp = Cudd_bddAnd(manager, Y, Cudd_Not(Z));
     Cudd_Ref(tmp);
     deref(Y);
     Y = tmp;
     DdNode* Cw = NULL;
 
     DdNode* quick_test = pre(sys, Z, U, quant, 'e');
-    tmp = Cudd_bddSwapVariables(sys->manager, quick_test, array_list(sys->s_out_vars), array_list(sys->s_in_vars), sys->s_var_num);
+    tmp = Cudd_bddSwapVariables(manager, quick_test, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
     Cudd_Ref(tmp);
     deref(quick_test);
     quick_test = tmp;
-    tmp = Cudd_bddAnd(sys->manager, quick_test, Y);
+    tmp = Cudd_bddAnd(manager, quick_test, Y);
     Cudd_Ref(tmp);
     deref(quick_test);
     quick_test = tmp;
 
     // no reach to Z
-    if (Cudd_EquivDC(sys->manager, quick_test, Cudd_ReadLogicZero(sys->manager), Cudd_ReadLogicZero(sys->manager)))
+    if (Cudd_EquivDC(manager, quick_test, Cudd_ReadLogicZero(manager), Cudd_ReadLogicZero(manager)))
     {
         deref(quick_test);
         deref(Y);
-        Y = Cudd_ReadLogicZero(sys->manager);
+        Y = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Y);
         if (mode >= WIN_CANDIDATE_SET)
         {
-            Cw = Cudd_ReadLogicZero(sys->manager);
+            Cw = Cudd_ReadLogicZero(manager);
             Cudd_Ref(Cw);
         }
         DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
@@ -282,30 +284,30 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
 
     if (mode >= WIN_CANDIDATE_SET) // get candidate space
     {
-        Cw = Cudd_bddAnd(sys->manager, Y, Cudd_Not(Z));
+        Cw = Cudd_bddAnd(manager, Y, Cudd_Not(Z));
         Cudd_Ref(Cw);
     }
     // printf("Y:\n");
-    // PRINT_OUT(sys->manager, Y, sys->a_var_num, sys->s_var_num, map, 0);
+    // PRINT_OUT(manager, Y, sys->a_var_num, sys->s_var_num, map, 0);
 
     // iterate with Y_k+1 = Y_k & Pre_ea(Y_k & Z)
-    DdNode* old_Y = Cudd_ReadLogicZero(sys->manager);
+    DdNode* old_Y = Cudd_ReadLogicZero(manager);
     Cudd_Ref(old_Y);
-    while (!Cudd_EquivDC(sys->manager, Y, old_Y, Cudd_ReadLogicZero(sys->manager)))
+    while (!Cudd_EquivDC(manager, Y, old_Y, Cudd_ReadLogicZero(manager)))
     {
         deref(old_Y);
         old_Y = Y;
 
-        tmp = Cudd_bddOr(sys->manager, old_Y, Z);
+        tmp = Cudd_bddOr(manager, old_Y, Z);
         Cudd_Ref(tmp);
         DdNode* pre_set = pre(sys, tmp, U, quant, 'a');
         deref(tmp);
 
-        tmp = Cudd_bddSwapVariables(sys->manager, pre_set, array_list(sys->s_out_vars), array_list(sys->s_in_vars), sys->s_var_num);
+        tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
         pre_set = tmp;
-        Y = Cudd_bddAnd(sys->manager, old_Y, pre_set);
+        Y = Cudd_bddAnd(manager, old_Y, pre_set);
         Cudd_Ref(Y);
         deref(pre_set);
     }
@@ -324,23 +326,24 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
 
 DdNode** PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
 {
+    DdManager* manager = get_mgr(sys);
     DdNode* U;
     DdNode* G;
-    DdNode* PG_set = Cudd_bddAnd(sys->manager, Z, Cudd_ReadOne(sys->manager));
+    DdNode* PG_set = Cudd_bddAnd(manager, Z, Cudd_ReadOne(manager));
     Cudd_Ref(PG_set);
     DdNode* inv_set;
     DdNode* tmp;
     DdNode* Cw;
     if (mode >= WIN_CANDIDATE_SET)
     {
-        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
     }
     for (int i = 0; i < array_len(sys->pg_U); i++)
     {
         if (array_get(sys->pg_U, i) == NULL)
             continue;
-        if (quant == 'a' && !Cudd_EquivDC(sys->manager, array_get(sys->pg_U, i), sys->all_actions, Cudd_Not(sys->all_actions)))
+        if (quant == 'a' && !Cudd_EquivDC(manager, array_get(sys->pg_U, i), sys->all_actions, Cudd_Not(sys->all_actions)))
         {
             mexPrintf("This happens! Progress group skipped\n");
             continue;
@@ -359,7 +362,7 @@ DdNode** PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
             }
         }
         mxFree(in);
-        tmp = Cudd_bddOr(sys->manager, inv_set, PG_set);
+        tmp = Cudd_bddOr(manager, inv_set, PG_set);
         Cudd_Ref(tmp);
         deref(inv_set);
         deref(PG_set);
@@ -380,6 +383,7 @@ DdNode** PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
 
 DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
 {
+    DdManager* manager = get_mgr(sys);
     // calculates Win_q,a(B U Z)
     DdNode* PGpre_set;
     DdNode* pre_set;
@@ -387,16 +391,16 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
     DdNode* Cw;
     if (mode >= WIN_CANDIDATE_SET)
     {
-        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
     }
-    DdNode* one = Cudd_ReadOne(sys->manager);
+    DdNode* one = Cudd_ReadOne(manager);
     Cudd_Ref(one);
-    DdNode* X = Cudd_ReadLogicZero(sys->manager);
+    DdNode* X = Cudd_ReadLogicZero(manager);
     Cudd_Ref(X);
-    DdNode* old_X = Cudd_ReadOne(sys->manager);
+    DdNode* old_X = Cudd_ReadOne(manager);
     Cudd_Ref(old_X);
-    while(!Cudd_EquivDC(sys->manager, X, old_X, Cudd_ReadLogicZero(sys->manager)))
+    while(!Cudd_EquivDC(manager, X, old_X, Cudd_ReadLogicZero(manager)))
     {
         deref(old_X);
         old_X = X;
@@ -413,18 +417,18 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
         mxFree(in);
         pre_set = pre(sys, X, one, quant, 'a');
 
-        tmp = Cudd_bddSwapVariables(sys->manager, pre_set, array_list(sys->s_in_vars), array_list(sys->s_out_vars), sys->s_var_num);
+        tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
         pre_set = tmp;
-        tmp = Cudd_bddAnd(sys->manager, B, pre_set);
+        tmp = Cudd_bddAnd(manager, B, pre_set);
         Cudd_Ref(tmp);
         X = tmp;
-        tmp = Cudd_bddOr(sys->manager, PGpre_set, X);
+        tmp = Cudd_bddOr(manager, PGpre_set, X);
         Cudd_Ref(tmp);
         deref(X);
         X = tmp;
-        tmp = Cudd_bddOr(sys->manager, Z, X);
+        tmp = Cudd_bddOr(manager, Z, X);
         Cudd_Ref(tmp);
         deref(X);
         X = tmp;
@@ -436,15 +440,15 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
     if (mode >= WIN_CANDIDATE_SET)
     {
         DdNode* XPre = pre(sys, X, one, quant, 'a');
-        tmp = Cudd_bddSwapVariables(sys->manager, XPre, array_list(sys->s_out_vars), array_list(sys->s_in_vars), sys->s_var_num);
+        tmp = Cudd_bddSwapVariables(manager, XPre, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(XPre);
         XPre = tmp;
-        tmp = Cudd_bddAnd(sys->manager, XPre, Cudd_Not(X));
+        tmp = Cudd_bddAnd(manager, XPre, Cudd_Not(X));
         Cudd_Ref(tmp);
         deref(XPre);
         XPre = tmp;
-        tmp = Cudd_bddOr(sys->manager, Cw, XPre);
+        tmp = Cudd_bddOr(manager, Cw, XPre);
         Cudd_Ref(tmp);
         deref(Cw);
         deref(XPre);
@@ -466,7 +470,8 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
 
 DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char quant, int mode)
 {
-    DdNode* always_A = Cudd_ReadOne(sys->manager);
+    DdManager* manager = get_mgr(sys);
+    DdNode* always_A = Cudd_ReadOne(manager);
     Cudd_Ref(always_A);
     DdNode* win_until_set;
     DdNode* B_always;
@@ -474,22 +479,22 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
     DdNode* Cw;
     if (mode >= WIN_CANDIDATE_SET)
     {
-        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
     }
     DdNode* tmp;
 
-    if (!Cudd_EquivDC(sys->manager, A, sys->all_states, Cudd_Not(sys->all_states)))
+    if (!Cudd_EquivDC(manager, A, sys->all_states, Cudd_Not(sys->all_states)))
     {
-        DdNode* zero = Cudd_ReadLogicZero(sys->manager);
+        DdNode* zero = Cudd_ReadLogicZero(manager);
         Cudd_Ref(zero);
-        DdNode* one = Cudd_ReadOne(sys->manager);
+        DdNode* one = Cudd_ReadOne(manager);
         Cudd_Ref(one);
         deref(always_A);
 
         DdNode** in = win_intermediate(sys, sys->all_states, A, zero, &one, 1, quant, mode);
-        Cudd_RecursiveDeref(sys->manager, zero);
-        Cudd_RecursiveDeref(sys->manager, one);
+        Cudd_RecursiveDeref(manager, zero);
+        Cudd_RecursiveDeref(manager, one);
         if (mode >= WIN_SET)
         {
             always_A = in[0];
@@ -502,21 +507,21 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
         mxFree(in);
     }
 
-    B_always = Cudd_bddAnd(sys->manager, always_A, B);
+    B_always = Cudd_bddAnd(manager, always_A, B);
     Cudd_Ref(B_always);
-    Z_always = Cudd_bddAnd(sys->manager, always_A, Z);
+    Z_always = Cudd_bddAnd(manager, always_A, Z);
     Cudd_Ref(Z_always);
     deref(always_A);
 
     DdNode** in = win_until(sys, Z_always, B_always, quant, mode);
-    Cudd_RecursiveDeref(sys->manager, B_always);
-    Cudd_RecursiveDeref(sys->manager, Z_always);
+    Cudd_RecursiveDeref(manager, B_always);
+    Cudd_RecursiveDeref(manager, Z_always);
     if (mode >= WIN_SET)
     {
         win_until_set = in[0];
         if (mode >= WIN_CANDIDATE_SET)
         {
-            tmp = Cudd_bddOr(sys->manager, Cw, in[1]);
+            tmp = Cudd_bddOr(manager, Cw, in[1]);
             Cudd_Ref(tmp);
             deref(Cw);
             deref(in[1]);
@@ -538,47 +543,48 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
 DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
                          DdNode** C, int C_num, char quant, int mode)
 {
+    DdManager* manager = get_mgr(sys);
     DdNode* W;
     DdNode* old_W;
     DdNode** Z_iter = (DdNode**)mxMalloc(sizeof(DdNode*)*C_num);
     DdNode* tmp;
     DdNode* pre_set;
-    DdNode* one = Cudd_ReadOne(sys->manager);
+    DdNode* one = Cudd_ReadOne(manager);
     Cudd_Ref(one);
     DdNode* win_until_set;
     DdNode* Cw;
     if (mode >= WIN_CANDIDATE_SET)
     {
-        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
     }
     DdNode* W_1;
 
-    W = Cudd_ReadOne(sys->manager);
+    W = Cudd_ReadOne(manager);
     Cudd_Ref(W);
-    old_W = Cudd_ReadLogicZero(sys->manager);
+    old_W = Cudd_ReadLogicZero(manager);
     Cudd_Ref(old_W);
     int first_set = 1;
-    while (!Cudd_EquivDC(sys->manager, W, old_W, Cudd_ReadLogicZero(sys->manager)))
+    while (!Cudd_EquivDC(manager, W, old_W, Cudd_ReadLogicZero(manager)))
     {
         deref(old_W);
         old_W = W;
         pre_set = pre(sys, W, one, quant, 'a');
-        tmp = Cudd_bddSwapVariables(sys->manager, pre_set, array_list(sys->s_in_vars), array_list(sys->s_out_vars), sys->s_var_num);
+        tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
         pre_set = tmp;
 
-        DdNode* intermediate = Cudd_bddAnd(sys->manager, B, pre_set);
+        DdNode* intermediate = Cudd_bddAnd(manager, B, pre_set);
         Cudd_Ref(intermediate);
         deref(pre_set);
 
         for (int i = 0; i < C_num; i++)
         {
-            tmp = Cudd_bddAnd(sys->manager, C[i], intermediate);
+            tmp = Cudd_bddAnd(manager, C[i], intermediate);
             Cudd_Ref(tmp);
             Z_iter[i] = tmp;
-            tmp = Cudd_bddOr(sys->manager, Z_iter[i], Z);
+            tmp = Cudd_bddOr(manager, Z_iter[i], Z);
             Cudd_Ref(tmp);
             deref(Z_iter[i]);
             Z_iter[i] = tmp;
@@ -589,7 +595,7 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
                 win_until_set = in[0];
                 if (first_set && mode >= WIN_CANDIDATE_SET)
                 {
-                    tmp = Cudd_bddOr(sys->manager, Cw, in[1]);
+                    tmp = Cudd_bddOr(manager, Cw, in[1]);
                     Cudd_Ref(tmp);
                     deref(Cw);
                     deref(in[1]);
@@ -597,7 +603,7 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
                 }
             }
             mxFree(in);
-            tmp = Cudd_bddAnd(sys->manager, W, win_until_set);
+            tmp = Cudd_bddAnd(manager, W, win_until_set);
             Cudd_Ref(tmp);
             if (i > 0)
                 deref(W);
@@ -609,7 +615,7 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
 
         if (mode >= WIN_CANDIDATE_SET && first_set)
         {
-            W_1 = Cudd_bddAnd(sys->manager, W, Cudd_ReadOne(sys->manager));
+            W_1 = Cudd_bddAnd(manager, W, Cudd_ReadOne(manager));
             Cudd_Ref(W_1);
             first_set = 0;
         }
@@ -625,10 +631,10 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
         out[0] = W;
         if (mode >= WIN_CANDIDATE_SET)
         {
-            DdNode* W_set = Cudd_bddAnd(sys->manager, W_1, Cudd_Not(W));
+            DdNode* W_set = Cudd_bddAnd(manager, W_1, Cudd_Not(W));
             Cudd_Ref(W_set);
             deref(W_1);
-            tmp = Cudd_bddOr(sys->manager, Cw, W_set);
+            tmp = Cudd_bddOr(manager, Cw, W_set);
             Cudd_Ref(tmp);
             deref(Cw);
             deref(W_set);
@@ -643,12 +649,13 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
 DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
                    char quant1, char quant2, DdNode* head_start, int mode)
 {
+    DdManager* manager = get_mgr(sys);
     int C_created = 0;
     if (C_num <= 0 || C == NULL)
     {
         C_num = 1;
         C = mxMalloc(sizeof(DdNode*));
-        C[0] = Cudd_ReadOne(sys->manager);
+        C[0] = Cudd_ReadOne(manager);
         Cudd_Ref(C[0]);
         C_created = 1;
     }
@@ -658,17 +665,17 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
     DdNode* V;
     if (head_start == NULL)
     {
-        V = Cudd_ReadLogicZero(sys->manager);
+        V = Cudd_ReadLogicZero(manager);
         Cudd_Ref(V);
     }
     else
     {
-        V = Cudd_bddAnd(sys->manager, head_start, Cudd_ReadOne(sys->manager));
+        V = Cudd_bddAnd(manager, head_start, Cudd_ReadOne(manager));
         Cudd_Ref(V);
     }
-    DdNode* old_V = Cudd_ReadOne(sys->manager);
+    DdNode* old_V = Cudd_ReadOne(manager);
     Cudd_Ref(old_V);
-    DdNode* one = Cudd_ReadOne(sys->manager);
+    DdNode* one = Cudd_ReadOne(manager);
     Cudd_Ref(one);
     DdNode* pre_set;
     DdNode* pg_pre_set;
@@ -677,28 +684,28 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
     DdNode* Cw;
     if (mode >= WIN_CANDIDATE_SET)
     {
-        Cw = Cudd_ReadLogicZero(sys->manager);
+        Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
     }
 
-    if (Cudd_EquivDC(sys->manager, A, Cudd_ReadLogicZero(sys->manager), Cudd_ReadLogicZero(sys->manager)))
+    if (Cudd_EquivDC(manager, A, Cudd_ReadLogicZero(manager), Cudd_ReadLogicZero(manager)))
          A = one;
-    if (Cudd_EquivDC(sys->manager, B, Cudd_ReadLogicZero(sys->manager), Cudd_ReadLogicZero(sys->manager)))
+    if (Cudd_EquivDC(manager, B, Cudd_ReadLogicZero(manager), Cudd_ReadLogicZero(manager)))
          B = one;
     int first_set = 1;
-    while (!Cudd_EquivDC(sys->manager, V, old_V, Cudd_ReadLogicZero(sys->manager)))
+    while (!Cudd_EquivDC(manager, V, old_V, Cudd_ReadLogicZero(manager)))
     {
         deref(old_V);
         old_V = V;
         pre_set = pre(sys, V, one, quant1, 'a');
-        tmp = Cudd_bddSwapVariables(sys->manager, pre_set, array_list(sys->s_in_vars), array_list(sys->s_out_vars), sys->s_var_num);
+        tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
         pre_set = tmp;
         DdNode** PGpre_in = PGpre(sys, V, A, quant1, WIN_SET);
         pg_pre_set = PGpre_in[0];
         mxFree(PGpre_in);
-        Z = Cudd_bddOr(sys->manager, pre_set, pg_pre_set);
+        Z = Cudd_bddOr(manager, pre_set, pg_pre_set);
         Cudd_Ref(Z);
         deref(pre_set);
         deref(pg_pre_set);
@@ -722,14 +729,14 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
     if (mode >= WIN_CANDIDATE_SET)
     {
         pre_set = pre(sys, V, one, quant1, 'e');
-        tmp = Cudd_bddSwapVariables(sys->manager, pre_set, array_list(sys->s_out_vars), array_list(sys->s_in_vars), sys->s_var_num);
+        tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
         pre_set = tmp;
-        tmp = Cudd_bddAnd(sys->manager, pre_set, Cudd_Not(V));
+        tmp = Cudd_bddAnd(manager, pre_set, Cudd_Not(V));
         Cudd_Ref(tmp);
         deref(pre_set);
-        DdNode* tmp2 = Cudd_bddOr(sys->manager, Cw, tmp);
+        DdNode* tmp2 = Cudd_bddOr(manager, Cw, tmp);
         Cudd_Ref(tmp2);
         deref(Cw);
         deref(tmp);

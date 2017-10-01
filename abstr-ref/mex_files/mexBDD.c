@@ -13,6 +13,7 @@
 
 void free_all();
 void free_system(BDDSys* system_to_free);
+void free_controller(BDDCont* cont);
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
 BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _a_encs);
 BDDSys* loadBDDSys(uint s_var_num, mxArray* _s_encs, mxArray* _s_in_inds, mxArray* _s_out_inds,
@@ -45,7 +46,9 @@ void read_mex_list(NumList* list, const mxArray* mexList);
 void read_set_list(NumList* list, const mxArray* mexList);
 
 BDDSysList* allocated_BDDs;
+BDDContList* allocated_conts;
 const uint BDD_alloc_buffer = 10;
+const uint Cont_alloc_buffer = 20;
 const uint var_buffer = 10;
 const uint s_buffer = 500;
 const uint pg_buffer = 10;
@@ -107,57 +110,32 @@ void free_all()
                free_system(sys);
           mexPrintf("System cleared\n");
      }
+
+     for (int i = 0; i < array_len(allocated_conts); i++)
+     {
+          mexPrintf("Clearing controller %d\n", i);
+          BDDCont* cont = array_get(allocated_conts, i);
+          if (cont != NULL)
+               free_controller(cont);
+          mexPrintf("Controller cleared\n");
+     }
+
      mexPrintf("Freeing system list\n");
      array_free(allocated_BDDs);
+     array_free(allocated_conts);
      mexPrintf("Memory freed\n");
 }
 void free_system(BDDSys* system_to_free)
 {
      if (initialized && system_to_free != NULL)
      {
+          DdManager* manager = get_mgr(system_to_free);
           mexPrintf("Clearing transition system\n");
-          Cudd_RecursiveDeref(system_to_free->manager, system_to_free->trans_sys);
+          Cudd_RecursiveDeref(manager, system_to_free->trans_sys);
           mexPrintf("Clearing state BDD\n");
-          Cudd_RecursiveDeref(system_to_free->manager, system_to_free->all_states);
+          Cudd_RecursiveDeref(manager, system_to_free->all_states);
           mexPrintf("Clearing action BDD\n");
-          Cudd_RecursiveDeref(system_to_free->manager, system_to_free->all_actions);
-          mexPrintf("Clearing s_in_vars\n");
-          array_free(system_to_free->s_in_vars);
-          array_free(system_to_free->s_in_inds);
-          mexPrintf("Clearing s_out_vars\n");
-          array_free(system_to_free->s_out_vars);
-          array_free(system_to_free->s_out_inds);
-          mexPrintf("Clearing a_vars\n");
-          array_free(system_to_free->a_vars);
-          array_free(system_to_free->a_inds);
-          mexPrintf("Clearing s_encodings\n");
-          mexEvalString("drawnow;");
-          for (int i = 0; i < array_len(system_to_free->s_encs); i++)
-          {
-               mexPrintf("Clearing s_encoding %d\n", i);
-               mexEvalString("drawnow;");
-               if (array_get(system_to_free->s_encs, i) != NULL)
-                    array_free(array_get(system_to_free->s_encs, i));
-          }
-          mexPrintf("Clearing s_encoding list\n");
-          mexEvalString("drawnow;");
-          array_free(system_to_free->s_encs);
-
-          mexPrintf("Clearing a_encodings\n");
-          mexEvalString("drawnow;");
-          for (int i = 0; i < array_len(system_to_free->a_encs); i++)
-          {
-               mexPrintf("Clearing a_encoding %d\n", i);
-               mexEvalString("drawnow;");
-               if (array_get(system_to_free->a_encs, i) != NULL)
-                    array_free(array_get(system_to_free->a_encs, i));
-          }
-          mexPrintf("Clearing a_encoding list\n");
-          mexEvalString("drawnow;");
-          array_free(system_to_free->a_encs);
-          mexPrintf("Clearing enc_state_map\n");
-          mexEvalString("drawnow;");
-          array_free(system_to_free->enc_state_map);
+          Cudd_RecursiveDeref(manager, system_to_free->all_actions);
           mexPrintf("Clearing pg_U\n");
           mexEvalString("drawnow;");
           for (int i = 0; i < array_len(system_to_free->pg_U); i++)
@@ -165,7 +143,7 @@ void free_system(BDDSys* system_to_free)
                mexPrintf("Clearing U group %d\n", i);
                mexEvalString("drawnow;");
                if (array_get(system_to_free->pg_U, i) != NULL)
-                    Cudd_RecursiveDeref(system_to_free->manager, array_get(system_to_free->pg_U, i));
+                    Cudd_RecursiveDeref(manager, array_get(system_to_free->pg_U, i));
           }
           array_free(system_to_free->pg_U);
           mexPrintf("Clearing pg_G\n");
@@ -175,13 +153,33 @@ void free_system(BDDSys* system_to_free)
                mexPrintf("Clearing G group %d\n", i);
                mexEvalString("drawnow;");
                if (array_get(system_to_free->pg_G, i) != NULL)
-                    Cudd_RecursiveDeref(system_to_free->manager, array_get(system_to_free->pg_G, i));
+                    Cudd_RecursiveDeref(manager, array_get(system_to_free->pg_G, i));
           }
           array_free(system_to_free->pg_G);
-          mexPrintf("Checking non-zero references: %d\n", Cudd_CheckZeroRef(system_to_free->manager));
-          mexPrintf("Quitting CUDD\n");
-          mexEvalString("drawnow;");
-          Cudd_Quit(system_to_free->manager);
+          mexPrintf("Checking non-zero references: %d\n", Cudd_CheckZeroRef(get_mgr(system_to_free)));
+          mgr_decr(system_to_free->mgr);
+          mxFree(system_to_free->mgr);
+     }
+}
+
+void free_controller(BDDCont* cont_to_free)
+{
+     if (initialized && cont_to_free != NULL)
+     {
+          DdManager* manager = get_mgr(cont_to_free);
+          for (int i = 0; i < array_len(cont_to_free->sets); i++)
+               Cudd_RecursiveDeref(manager, array_get(cont_to_free->sets, i));
+          array_free(cont_to_free->sets);
+          if (cont_to_free->input != NULL)
+               Cudd_RecursiveDeref(manager, cont_to_free->input);
+          if (cont_to_free->subconts != NULL)
+          {
+               for (int i = 0; i < array_len(cont_to_free->subconts); i++)
+                    free_controller(array_get(cont_to_free->subconts, i));
+               array_free(cont_to_free->subconts);
+          }
+          mgr_decr(cont_to_free->mgr);
+          mxFree(cont_to_free->mgr);
      }
 }
 
@@ -198,8 +196,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           array_init(list, BDDSysList, 0, BDD_alloc_buffer);
           allocated_BDDs = list;
           array_make_persist(allocated_BDDs);
-          for (int i = 0; i < array_len(allocated_BDDs); i++)
-               array_set(allocated_BDDs, i, NULL);
+          array_init(cont_list, BDDContList, 0, Cont_alloc_buffer);
+          allocated_conts = cont_list;
+          array_make_persist(allocated_conts);
           mexAtExit(&free_all);
           initialized = 1;
      }
@@ -364,12 +363,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           add_state(given_sys, state, encoding, new_var_num);
           // mexPrintf("Added state\n");
           // mexPrintf("Encoding at %d: ", state-1);
-          // NumList* test_enc = array_get(given_sys->s_encs, state-1);
+          // NumList* test_enc = array_get(given_sys->mgr->s_encs, state-1);
           // for (int j = 0; j < array_len(test_enc); j++)
           //      mexPrintf("%d", array_get(test_enc, j));
           // mexPrintf("\n");
           // mexPrintf("And at %d: ", state);
-          // test_enc = array_get(given_sys->s_encs, state);
+          // test_enc = array_get(given_sys->mgr->s_encs, state);
           // for (int j = 0; j < array_len(test_enc); j++)
           //      mexPrintf("%d", array_get(test_enc, j));
           // mexPrintf("\n");
@@ -386,7 +385,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           array_init(encoding, NumList, enc_len, var_buffer);
           read_mex_list(encoding, prhs[3]);
           // array_cpy(encoding, 0, (uint*)mxGetData(prhs[3]), sizeof(uint)*enc_len);
-          uint len_diff = given_sys->s_var_num - enc_len;
+          uint len_diff = given_sys->mgr->s_var_num - enc_len;
           if (len_diff > 0)
                zeropad(encoding, enc_len, len_diff);
           // mexPrintf("Setting enc of length %d ", enc_len);
@@ -394,9 +393,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           //      mexPrintf("%d", array_get(encoding, i));
           // mexPrintf(" to %d\n", ind+1);
           set_state_enc(given_sys, ind, encoding);
-          // for (int i = 0; i < array_len(given_sys->enc_state_map); i++)
+          // for (int i = 0; i < array_len(given_sys->mgr->enc_state_map); i++)
           // {
-          //      mexPrintf("key %d to %d\n", i, array_get(given_sys->enc_state_map, i));
+          //      mexPrintf("key %d to %d\n", i, array_get(given_sys->mgr->enc_state_map, i));
           // }
      }
      else if (strcmp(command, "add_trans") == 0)
@@ -437,7 +436,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           // mexPrintf("Reading transitions");
           // mexEvalString("drawnow;");
           uint** transition_parts = read_transitions(given_sys, transitions);
-          Cudd_RecursiveDeref(given_sys->manager, transitions);
+          Cudd_RecursiveDeref(get_mgr(given_sys), transitions);
           uint trans_num = (*transition_parts)[0];
 
 
@@ -648,22 +647,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      else if (strcmp(command, "save") == 0)
      {
           plhs[0] = mxCreateCellMatrix(1, 4);
-          mxArray* s_in_inds_copy = mxCreateDoubleMatrix(given_sys->s_var_num, 1, mxREAL);
+          mxArray* s_in_inds_copy = mxCreateDoubleMatrix(given_sys->mgr->s_var_num, 1, mxREAL);
           double* s_in_ptr = mxGetPr(s_in_inds_copy);
-          mxArray* s_out_inds_copy = mxCreateDoubleMatrix(given_sys->s_var_num, 1, mxREAL);
+          mxArray* s_out_inds_copy = mxCreateDoubleMatrix(given_sys->mgr->s_var_num, 1, mxREAL);
           double* s_out_ptr = mxGetPr(s_out_inds_copy);
-          mxArray* a_inds_copy = mxCreateDoubleMatrix(given_sys->a_var_num, 1, mxREAL);
+          mxArray* a_inds_copy = mxCreateDoubleMatrix(given_sys->mgr->a_var_num, 1, mxREAL);
           double* a_ptr = mxGetPr(a_inds_copy);
           mxArray* pg_num = mxCreateDoubleMatrix(1, 1, mxREAL);
           *mxGetPr(pg_num) = array_len(given_sys->pg_U);
-          for (int i = 0; i < given_sys->s_var_num; i++)
+          for (int i = 0; i < given_sys->mgr->s_var_num; i++)
           {
-               s_in_ptr[i] = array_get(given_sys->s_in_inds, i);
-               s_out_ptr[i] = array_get(given_sys->s_out_inds, i);
+               s_in_ptr[i] = array_get(given_sys->mgr->s_in_inds, i);
+               s_out_ptr[i] = array_get(given_sys->mgr->s_out_inds, i);
           }
-          for (int i = 0; i < given_sys->a_var_num; i++)
+          for (int i = 0; i < given_sys->mgr->a_var_num; i++)
           {
-               a_ptr[i] = array_get(given_sys->a_inds, i);
+               a_ptr[i] = array_get(given_sys->mgr->a_inds, i);
           }
           mxSetCell(plhs[0], 0, s_in_inds_copy);
           mxSetCell(plhs[0], 1, s_out_inds_copy);
@@ -689,7 +688,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           }
           FILE* dump = fopen("temp_sys.dump", "w");
           printf("Saving %d BDD systems\n", array_len(BDDs_to_store));
-          Dddmp_cuddBddArrayStore(given_sys->manager, NULL, array_len(BDDs_to_store),
+          Dddmp_cuddBddArrayStore(get_mgr(given_sys), NULL, array_len(BDDs_to_store),
                                    array_list(BDDs_to_store), NULL, NULL, NULL, DDDMP_MODE_BINARY,
                                    DDDMP_VARIDS, "temp_sys.dump", dump);
           fclose(dump);
@@ -702,6 +701,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           post-states, actions, quant1, quant2
           */
           // reading states
+          DdManager* manager = get_mgr(given_sys);
           DdNode* state_BDD = read_BDD_from_mxarray(given_sys, prhs[2], 's');
 
           // reading actions
@@ -709,8 +709,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           DdNode* action_BDD = read_BDD_from_mxarray(given_sys, prhs[3], 'a');
           if (action_num == 0)
           {
-               Cudd_RecursiveDeref(given_sys->manager, action_BDD);
-               action_BDD = Cudd_ReadOne(given_sys->manager);
+               Cudd_RecursiveDeref(manager, action_BDD);
+               action_BDD = Cudd_ReadOne(manager);
                Cudd_Ref(action_BDD);
           }
 
@@ -722,9 +722,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           // calculate set
           DdNode* pre_set = pre(given_sys, state_BDD, action_BDD, quant1, quant2);
           uint** pre_states = read_in_states(given_sys, pre_set);
-          Cudd_RecursiveDeref(given_sys->manager, pre_set);
-          Cudd_RecursiveDeref(given_sys->manager, state_BDD);
-          Cudd_RecursiveDeref(given_sys->manager, action_BDD);
+          Cudd_RecursiveDeref(manager, pre_set);
+          Cudd_RecursiveDeref(manager, state_BDD);
+          Cudd_RecursiveDeref(manager, action_BDD);
           // return output
           uint pre_num = (uint)*(pre_states[0]);
           plhs[0] = mxCreateDoubleMatrix(pre_num, 1, mxREAL);
@@ -735,6 +735,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      }
      else if (strcmp(command, "pre_pg") == 0)
      {
+          DdManager* manager = get_mgr(given_sys);
           // read V
           DdNode* V = read_BDD_from_mxarray(given_sys, prhs[2], 's');
 
@@ -746,25 +747,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           int mode = nlhs;
 
           DdNode** PG_sets = PGpre(given_sys, V, B, quant, mode);
-          Cudd_RecursiveDeref(given_sys->manager, V);
-          Cudd_RecursiveDeref(given_sys->manager, B);
+          Cudd_RecursiveDeref(manager, V);
+          Cudd_RecursiveDeref(manager, B);
 
           if (mode >= WIN_SET)
           {
                DdNode* PG_set_W = PG_sets[0];
                write_BDD_to_mxarray(given_sys, PG_set_W, &plhs[0], 's');
-               Cudd_RecursiveDeref(given_sys->manager, PG_set_W);
+               Cudd_RecursiveDeref(manager, PG_set_W);
                if (mode >= WIN_CANDIDATE_SET)
                {
                     DdNode* PG_set_Cw = PG_sets[1];
                     write_BDD_to_mxarray(given_sys, PG_set_Cw, &plhs[1], 's');
-                    Cudd_RecursiveDeref(given_sys->manager, PG_set_Cw);
+                    Cudd_RecursiveDeref(manager, PG_set_Cw);
                }
           }
           mxFree(PG_sets);
      }
      else if (strcmp(command, "pg_inv") == 0)
      {
+          DdManager* manager = get_mgr(given_sys);
           // read U
           DdNode* U = read_BDD_from_mxarray(given_sys, prhs[2], 'a');
 
@@ -784,27 +786,28 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           int mode = nlhs;
           mexPrintf("Calling pg_inv with quant %c and mode %d\n", quant1, mode);
           DdNode** pg_inv_set = inv(given_sys, Z, B, U, G, quant1, mode);
-          Cudd_RecursiveDeref(given_sys->manager, U);
-          Cudd_RecursiveDeref(given_sys->manager, G);
-          Cudd_RecursiveDeref(given_sys->manager, Z);
-          Cudd_RecursiveDeref(given_sys->manager, B);
+          Cudd_RecursiveDeref(manager, U);
+          Cudd_RecursiveDeref(manager, G);
+          Cudd_RecursiveDeref(manager, Z);
+          Cudd_RecursiveDeref(manager, B);
 
           if (mode >= WIN_SET)
           {
                DdNode* pg_inv_set_W = pg_inv_set[0];
                write_BDD_to_mxarray(given_sys, pg_inv_set_W, &plhs[0], 's');
-               Cudd_RecursiveDeref(given_sys->manager, pg_inv_set_W);
+               Cudd_RecursiveDeref(manager, pg_inv_set_W);
                if (mode >= WIN_CANDIDATE_SET)
                {
                     DdNode* pg_inv_set_Cw = pg_inv_set[0];
                     write_BDD_to_mxarray(given_sys, pg_inv_set_Cw, &plhs[1], 's');
-                    Cudd_RecursiveDeref(given_sys->manager, pg_inv_set_Cw);
+                    Cudd_RecursiveDeref(manager, pg_inv_set_Cw);
                }
           }
           mxFree(pg_inv_set);
      }
      else if (strcmp(command, "win_until") == 0)
      {
+          DdManager* manager = get_mgr(given_sys);
           // read B
           DdNode* B = read_BDD_from_mxarray(given_sys, prhs[2], 's');
 
@@ -816,23 +819,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           int mode = nlhs;
 
           DdNode** win_sets = win_until(given_sys, P, B, quant, mode);
-          Cudd_RecursiveDeref(given_sys->manager, B);
-          Cudd_RecursiveDeref(given_sys->manager, P);
+          Cudd_RecursiveDeref(manager, B);
+          Cudd_RecursiveDeref(manager, P);
 
           if (mode >= WIN_SET)
           {
                write_BDD_to_mxarray(given_sys, win_sets[0], &plhs[0], 's');
-               Cudd_RecursiveDeref(given_sys->manager, win_sets[0]);
+               Cudd_RecursiveDeref(manager, win_sets[0]);
                if (mode >= WIN_CANDIDATE_SET)
                {
                     write_BDD_to_mxarray(given_sys, win_sets[1], &plhs[1], 's');
-                    Cudd_RecursiveDeref(given_sys->manager, win_sets[1]);
+                    Cudd_RecursiveDeref(manager, win_sets[1]);
                }
           }
           mxFree(win_sets);
      }
      else if (strcmp(command, "win_until_and_always") == 0)
      {
+          DdManager* manager = get_mgr(given_sys);
           // read A
           DdNode* A = read_BDD_from_mxarray(given_sys, prhs[2], 's');
 
@@ -847,26 +851,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           int mode = nlhs;
 
           DdNode** win_sets = win_until_and_always(given_sys, A, B, P, quant, mode);
-          Cudd_RecursiveDeref(given_sys->manager, A);
-          Cudd_RecursiveDeref(given_sys->manager, B);
-          Cudd_RecursiveDeref(given_sys->manager, P);
+          Cudd_RecursiveDeref(manager, A);
+          Cudd_RecursiveDeref(manager, B);
+          Cudd_RecursiveDeref(manager, P);
 
           if (win_sets == NULL)
                return;
           if (mode >= WIN_SET)
           {
                write_BDD_to_mxarray(given_sys, win_sets[0], &plhs[0], 's');
-               Cudd_RecursiveDeref(given_sys->manager, win_sets[0]);
+               Cudd_RecursiveDeref(manager, win_sets[0]);
                if (mode >= WIN_CANDIDATE_SET)
                {
                     write_BDD_to_mxarray(given_sys, win_sets[1], &plhs[1], 's');
-                    Cudd_RecursiveDeref(given_sys->manager, win_sets[1]);
+                    Cudd_RecursiveDeref(manager, win_sets[1]);
                }
           }
           mxFree(win_sets);
      }
      else if (strcmp(command, "win_intermediate") == 0)
      {
+          DdManager* manager = get_mgr(given_sys);
           // A
           DdNode* A = read_BDD_from_mxarray(given_sys, prhs[2], 's');
 
@@ -890,20 +895,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           int mode = nlhs;
 
           DdNode** win_sets = win_intermediate(given_sys, A, B, P, C_list, cell_num, quant, mode);
-          Cudd_RecursiveDeref(given_sys->manager, A);
-          Cudd_RecursiveDeref(given_sys->manager, B);
-          Cudd_RecursiveDeref(given_sys->manager, P);
+          Cudd_RecursiveDeref(manager, A);
+          Cudd_RecursiveDeref(manager, B);
+          Cudd_RecursiveDeref(manager, P);
           for (int i = 0; i < cell_num; i++)
-               Cudd_RecursiveDeref(given_sys->manager, C_list[i]);
+               Cudd_RecursiveDeref(manager, C_list[i]);
 
           if (mode >= WIN_SET)
           {
                write_BDD_to_mxarray(given_sys, win_sets[0], &plhs[0], 's');
-               Cudd_RecursiveDeref(given_sys->manager, win_sets[0]);
+               Cudd_RecursiveDeref(manager, win_sets[0]);
                if (mode >= WIN_CANDIDATE_SET)
                {
                     write_BDD_to_mxarray(given_sys, win_sets[1], &plhs[1], 's');
-                    Cudd_RecursiveDeref(given_sys->manager, win_sets[1]);
+                    Cudd_RecursiveDeref(manager, win_sets[1]);
                }
           }
           mxFree(win_sets);
@@ -911,6 +916,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      }
      else if (strcmp(command, "win_primal") == 0)
      {
+          DdManager* manager = get_mgr(given_sys);
           // A
           DdNode* A = read_BDD_from_mxarray(given_sys, prhs[2], 's');
           // B
@@ -935,20 +941,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           int mode = nlhs;
 
           DdNode** win_sets = win_primal(given_sys, A, B, C_list, cell_num, quant1, quant2, V, mode);
-          Cudd_RecursiveDeref(given_sys->manager, A);
-          Cudd_RecursiveDeref(given_sys->manager, B);
-          Cudd_RecursiveDeref(given_sys->manager, V);
+          Cudd_RecursiveDeref(manager, A);
+          Cudd_RecursiveDeref(manager, B);
+          Cudd_RecursiveDeref(manager, V);
           for (int i = 0; i < cell_num; i++)
-               Cudd_RecursiveDeref(given_sys->manager, C_list[i]);
+               Cudd_RecursiveDeref(manager, C_list[i]);
 
           if (mode >= WIN_SET)
           {
                write_BDD_to_mxarray(given_sys, win_sets[0], &plhs[0], 's');
-               Cudd_RecursiveDeref(given_sys->manager, win_sets[0]);
+               Cudd_RecursiveDeref(manager, win_sets[0]);
                if (mode >= WIN_CANDIDATE_SET)
                {
                     write_BDD_to_mxarray(given_sys, win_sets[1], &plhs[1], 's');
-                    Cudd_RecursiveDeref(given_sys->manager, win_sets[1]);
+                    Cudd_RecursiveDeref(manager, win_sets[1]);
                }
           }
           mxFree(win_sets);
@@ -957,8 +963,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      else if (strcmp(command, "print_enc_map") == 0)
      {
           mexPrintf("Enc state map:\n");
-          for (int i = 0; i < array_len(given_sys->enc_state_map); i++)
-               mexPrintf("%d to %d\n", i, array_get(given_sys->enc_state_map, i));
+          for (int i = 0; i < array_len(given_sys->mgr->enc_state_map); i++)
+               mexPrintf("%d to %d\n", i, array_get(given_sys->mgr->enc_state_map, i));
      }
      else if (strcmp(command, "print_all_states") == 0)
      {
@@ -994,10 +1000,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      else if (strcmp(command, "print_encs") == 0)
      {
           mexPrintf("Encodings:\n");
-          for (int i = 0; i < array_len(given_sys->s_encs); i++)
+          for (int i = 0; i < array_len(given_sys->mgr->s_encs); i++)
           {
                mexPrintf("%d ", i);
-               NumList* enc = array_get(given_sys->s_encs, i);
+               NumList* enc = array_get(given_sys->mgr->s_encs, i);
                for (int j = 0; j < array_len(enc); j++)
                {
                     mexPrintf("%d", array_get(enc, j));
@@ -1007,7 +1013,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      }
      else if (strcmp(command, "debug") == 0)
      {
-          if (Cudd_DebugCheck(given_sys->manager))
+          if (Cudd_DebugCheck(get_mgr(given_sys)))
           {
                mexPrintf("Something is wrong!\n");
           }
@@ -1016,7 +1022,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      {
           plhs[0] = mxCreateDoubleMatrix(1,1, mxREAL);
           double* ptr = mxGetPr(plhs[0]);
-          *ptr = (double)Cudd_ReadNodeCount(given_sys->manager);
+          *ptr = (double)Cudd_ReadNodeCount(get_mgr(given_sys));
      }
      else if (strcmp(command, "count_system_nodes") == 0)
      {
@@ -1028,34 +1034,35 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      {
           plhs[0] = mxCreateDoubleMatrix(1,1,mxREAL);
           double* ptr = mxGetPr(plhs[0]);
-          *ptr = (double)Cudd_ReadDead(given_sys->manager);
+          *ptr = (double)Cudd_ReadDead(get_mgr(given_sys));
      }
      else if (strcmp(command, "reorder") == 0)
      {
           uint bound = (uint)mxGetScalar(prhs[2]);
           mexPrintf("Reorder with bound %d\n", bound);
           // mexEvalString("drawnow;");
-          Cudd_ReduceHeap(given_sys->manager, reorder_alg, bound);
+          Cudd_ReduceHeap(get_mgr(given_sys), reorder_alg, bound);
      }
      else if (strcmp(command, "toggle_reorder") == 0)
      {
           int is_on = *mxGetLogicals(prhs[2]);
           if (is_on)
-               Cudd_AutodynEnable(given_sys->manager, reorder_alg);
+               Cudd_AutodynEnable(get_mgr(given_sys), reorder_alg);
           else
-               Cudd_AutodynDisable(given_sys->manager);
+               Cudd_AutodynDisable(get_mgr(given_sys));
      }
      else if (strcmp(command, "read_var_order") == 0)
      {
+          DdManager* manager = get_mgr(given_sys);
           mexPrintf("in states: ");
-          for (int i = 0; i < array_len(given_sys->s_in_vars); i++)
-               mexPrintf("%d ", Cudd_ReadPerm(given_sys->manager, array_get(given_sys->s_in_inds, i)));
+          for (int i = 0; i < array_len(given_sys->mgr->s_in_vars); i++)
+               mexPrintf("%d ", Cudd_ReadPerm(manager, array_get(given_sys->mgr->s_in_inds, i)));
           mexPrintf("; actions: ");
-          for (int i = 0; i < array_len(given_sys->a_vars); i++)
-               mexPrintf("%d ", Cudd_ReadPerm(given_sys->manager, array_get(given_sys->a_inds, i)));
+          for (int i = 0; i < array_len(given_sys->mgr->a_vars); i++)
+               mexPrintf("%d ", Cudd_ReadPerm(manager, array_get(given_sys->mgr->a_inds, i)));
           mexPrintf("; out states: ");
-          for (int i = 0; i < array_len(given_sys->s_out_vars); i++)
-               mexPrintf("%d ", Cudd_ReadPerm(given_sys->manager, array_get(given_sys->s_out_inds, i)));
+          for (int i = 0; i < array_len(given_sys->mgr->s_out_vars); i++)
+               mexPrintf("%d ", Cudd_ReadPerm(manager, array_get(given_sys->mgr->s_out_inds, i)));
           mexPrintf("\n");
      }
      else
@@ -1084,65 +1091,73 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _a_encs)
 {
      BDDSys sys;
-     mexPrintf("Making system with s=%d, a=%d\n", var_num, a_var_num);
-     sys.s_var_num = var_num;
-     sys.a_var_num = a_var_num;
      /* Start the BDD manager
      2*var_num + a_var_num initial BDD variables
      0 ZDD variables
      default number of unique slots (cudd figures it out)
      default cache size (cudd figures it out)
      max memory 0 = unlimited */
-
      mexPrintf("Making manager with %u\n", 2*var_num + a_var_num);
-     sys.manager = Cudd_Init((int)(2*var_num + a_var_num),0,CUDD_UNIQUE_SLOTS,CUDD_CACHE_SLOTS,0);
+     DdManager* manager = Cudd_Init((int)(2*var_num + a_var_num),0,CUDD_UNIQUE_SLOTS,CUDD_CACHE_SLOTS,0);
+     Manager mgr;
+     mgr.manager = manager;
+     mgr.struct_count = 0;
+     sys.mgr = mxMalloc(sizeof(Manager));
+     mexMakeMemoryPersistent(sys.mgr);
+     *sys.mgr = mgr;
+     mgr_incr(sys.mgr);
+
+     mexPrintf("Making system with s=%d, a=%d\n", var_num, a_var_num);
+     sys.mgr->s_var_num = var_num;
+     sys.mgr->a_var_num = a_var_num;
+
      // Cudd_AutodynEnable(sys.manager, reorder_alg);
      // Gather variables and allocate variable lists
      mexPrintf("Creating action variables\n");
-     array_init(a_vars, BDDlist, sys.a_var_num, var_buffer);
-     array_init(a_inds, NumList, sys.a_var_num, var_buffer);
-     sys.a_vars = a_vars;
-     sys.a_inds = a_inds;
-     array_make_persist(sys.a_vars);
-     array_make_persist(sys.a_inds);
-     for (int i = 0; i < sys.a_var_num; i++)
+     array_init(a_vars, BDDlist, sys.mgr->a_var_num, var_buffer);
+     array_init(a_inds, NumList, sys.mgr->a_var_num, var_buffer);
+     sys.mgr->a_vars = a_vars;
+     sys.mgr->a_inds = a_inds;
+     array_make_persist(a_vars);
+     array_make_persist(a_inds);
+     for (int i = 0; i < sys.mgr->a_var_num; i++)
      {
-          array_set(sys.a_vars, i, Cudd_bddIthVar(sys.manager, i));
-          array_set(sys.a_inds, i, i);
+          array_set(sys.mgr->a_vars, i, Cudd_bddIthVar(manager, i));
+          array_set(sys.mgr->a_inds, i, i);
      }
      mexPrintf("Creating state in variables\n");
-     array_init(s_in_vars, BDDlist, sys.s_var_num, var_buffer);
-     array_init(s_in_inds, NumList, sys.s_var_num, var_buffer);
-     sys.s_in_vars = s_in_vars;
-     sys.s_in_inds = s_in_inds;
-     array_make_persist(sys.s_in_vars);
-     array_make_persist(sys.s_in_inds);
-     for (int i = 0; i < sys.s_var_num; i++)
+     array_init(s_in_vars, BDDlist, sys.mgr->s_var_num, var_buffer);
+     array_init(s_in_inds, NumList, sys.mgr->s_var_num, var_buffer);
+     sys.mgr->s_in_vars = s_in_vars;
+     sys.mgr->s_in_inds = s_in_inds;
+     array_make_persist(s_in_vars);
+     array_make_persist(s_in_inds);
+     for (int i = 0; i < sys.mgr->s_var_num; i++)
      {
-          array_set(sys.s_in_vars, i, Cudd_bddIthVar(sys.manager, i + sys.a_var_num));
-          array_set(sys.s_in_inds, i, i + sys.a_var_num);
+          array_set(sys.mgr->s_in_vars, i, Cudd_bddIthVar(manager, i + sys.mgr->a_var_num));
+          array_set(sys.mgr->s_in_inds, i, i + sys.mgr->a_var_num);
      }
      mexPrintf("Creating state out variables\n");
-     array_init(s_out_vars, BDDlist, sys.s_var_num, var_buffer);
-     array_init(s_out_inds, NumList, sys.s_var_num, var_buffer);
-     sys.s_out_vars = s_out_vars;
-     sys.s_out_inds = s_out_inds;
-     array_make_persist(sys.s_out_vars);
-     array_make_persist(sys.s_out_inds);
-     for (int i = 0; i < sys.s_var_num; i++)
+     array_init(s_out_vars, BDDlist, sys.mgr->s_var_num, var_buffer);
+     array_init(s_out_inds, NumList, sys.mgr->s_var_num, var_buffer);
+     sys.mgr->s_out_vars = s_out_vars;
+     sys.mgr->s_out_inds = s_out_inds;
+     array_make_persist(s_out_vars);
+     array_make_persist(s_out_inds);
+     for (int i = 0; i < sys.mgr->s_var_num; i++)
      {
-          array_set(sys.s_out_vars, i, Cudd_bddIthVar(sys.manager, i + sys.s_var_num + sys.a_var_num));
-          array_set(sys.s_out_inds, i, i + sys.s_var_num + sys.a_var_num);
+          array_set(sys.mgr->s_out_vars, i, Cudd_bddIthVar(manager, i + sys.mgr->s_var_num + sys.mgr->a_var_num));
+          array_set(sys.mgr->s_out_inds, i, i + sys.mgr->s_var_num + sys.mgr->a_var_num);
      }
      // save and allocate encodings and add states to sets
      mexPrintf("Allocating encoding lists\n");
      array_init(s_encs, EncList, array_len(_s_encs), s_buffer);
-     array_init(enc_map, NumList, pow(2, sys.s_var_num), pow(2, sys.s_var_num));
+     array_init(enc_map, NumList, pow(2, sys.mgr->s_var_num), pow(2, sys.mgr->s_var_num));
 
-     sys.enc_state_map = enc_map;
-     sys.all_states = Cudd_ReadLogicZero(sys.manager);
+     sys.mgr->enc_state_map = enc_map;
+     sys.all_states = Cudd_ReadLogicZero(manager);
      Cudd_Ref(sys.all_states);
-     array_make_persist(sys.enc_state_map);
+     array_make_persist(enc_map);
 
      mexPrintf("Adding %d encodings\n", array_len(_s_encs));
      for (int i = 0; i < array_len(_s_encs); i++)
@@ -1150,24 +1165,24 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
           NumList* enc = array_get(_s_encs, i);
           array_set(s_encs, i, enc);
           array_make_persist(array_get(s_encs, i));
-          uint key = fromBitArray(array_list(enc), sys.s_var_num);
-          array_set(sys.enc_state_map, key, (uint)i);
+          uint key = fromBitArray(array_list(enc), sys.mgr->s_var_num);
+          array_set(sys.mgr->enc_state_map, key, (uint)i);
 
           mexPrintf("Adding enc key : %d\n", key);
           // Add to set
-          DdNode* state_cube = Cudd_bddComputeCube(sys.manager, array_list(sys.s_out_vars), array_list(enc), sys.s_var_num);
+          DdNode* state_cube = Cudd_bddComputeCube(manager, array_list(sys.mgr->s_out_vars), array_list(enc), sys.mgr->s_var_num);
           Cudd_Ref(state_cube);
-          DdNode* tmp = Cudd_bddOr(sys.manager, sys.all_states, state_cube);
+          DdNode* tmp = Cudd_bddOr(manager, sys.all_states, state_cube);
           Cudd_Ref(tmp);
-          Cudd_RecursiveDeref(sys.manager, sys.all_states);
-          Cudd_RecursiveDeref(sys.manager, state_cube);
+          Cudd_RecursiveDeref(manager, sys.all_states);
+          Cudd_RecursiveDeref(manager, state_cube);
           sys.all_states = tmp;
      }
-     sys.s_encs = s_encs;
-     array_make_persist(sys.s_encs);
+     sys.mgr->s_encs = s_encs;
+     array_make_persist(s_encs);
 
      array_init(a_encs, EncList, array_len(_a_encs), s_buffer);
-     sys.all_actions = Cudd_ReadLogicZero(sys.manager);
+     sys.all_actions = Cudd_ReadLogicZero(manager);
      Cudd_Ref(sys.all_actions);
      for (int i = 0; i < array_len(_a_encs); i++)
      {
@@ -1180,16 +1195,16 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
           printf("\n");
 
           // Add to set
-          DdNode* action_cube = Cudd_bddComputeCube(sys.manager, array_list(sys.a_vars), array_list(enc), sys.a_var_num);
+          DdNode* action_cube = Cudd_bddComputeCube(manager, array_list(sys.mgr->a_vars), array_list(enc), sys.mgr->a_var_num);
           Cudd_Ref(action_cube);
-          DdNode* tmp = Cudd_bddOr(sys.manager, sys.all_actions, action_cube);
+          DdNode* tmp = Cudd_bddOr(manager, sys.all_actions, action_cube);
           Cudd_Ref(tmp);
-          Cudd_RecursiveDeref(sys.manager, action_cube);
-          Cudd_RecursiveDeref(sys.manager, sys.all_actions);
+          Cudd_RecursiveDeref(manager, action_cube);
+          Cudd_RecursiveDeref(manager, sys.all_actions);
           sys.all_actions = tmp;
      }
-     sys.a_encs = a_encs;
-     array_make_persist(sys.a_encs);
+     sys.mgr->a_encs = a_encs;
+     array_make_persist(a_encs);
      // allocate pg groups
      array_init(pg_U, BDDlist, 0, pg_buffer);
      array_init(pg_G, BDDlist, 0, pg_buffer);
@@ -1198,7 +1213,7 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
      sys.pg_G = pg_G;
      array_make_persist(sys.pg_G);
 
-     sys.trans_sys = Cudd_ReadLogicZero(sys.manager);
+     sys.trans_sys = Cudd_ReadLogicZero(manager);
      Cudd_Ref(sys.trans_sys);
 
      BDDSys* ptr = mxMalloc(sizeof(BDDSys));
@@ -1214,67 +1229,77 @@ BDDSys* loadBDDSys(uint var_num, mxArray* _s_encs, mxArray* _s_in_inds, mxArray*
                     uint a_var_num, mxArray* _a_encs, mxArray* _a_inds, uint pg_num)
 {
      BDDSys sys;
-     mexPrintf("Making system with s=%d, a=%d\n", var_num, a_var_num);
-     sys.s_var_num = var_num;
-     sys.a_var_num = a_var_num;
      /* Start the BDD manager
      2*var_num + a_var_num initial BDD variables
      0 ZDD variables
      default number of unique slots (cudd figures it out)
      default cache size (cudd figures it out)
      max memory 0 = unlimited */
-
      mexPrintf("Making manager with %u\n", 2*var_num + a_var_num);
-     sys.manager = Cudd_Init((int)(2*var_num + a_var_num),0,CUDD_UNIQUE_SLOTS,CUDD_CACHE_SLOTS,0);
+     DdManager* manager = Cudd_Init((int)(2*var_num + a_var_num),0,CUDD_UNIQUE_SLOTS,CUDD_CACHE_SLOTS,0);
+     Manager mgr;
+     mgr.manager = manager;
+     mgr.struct_count = 0;
+     sys.mgr = mxMalloc(sizeof(Manager));
+     mexMakeMemoryPersistent(sys.mgr);
+     *sys.mgr = mgr;
+     mgr_incr(sys.mgr);
+
+     mexPrintf("Making system with s=%d, a=%d\n", var_num, a_var_num);
+     sys.mgr->s_var_num = var_num;
+     sys.mgr->a_var_num = a_var_num;
+
+
+
      // Cudd_AutodynEnable(sys.manager, reorder_alg);
      // Gather variables and allocate variable lists
      mexPrintf("Creating action variables\n");
-     array_init(a_vars, BDDlist, sys.a_var_num, var_buffer);
-     array_init(a_inds, NumList, sys.a_var_num, var_buffer);
-     sys.a_vars = a_vars;
-     sys.a_inds = a_inds;
-     array_make_persist(sys.a_vars);
-     array_make_persist(sys.a_inds);
-     read_mex_list(sys.a_inds, _a_inds);
-     for (int i = 0; i < sys.a_var_num; i++)
+     array_init(a_vars, BDDlist, sys.mgr->a_var_num, var_buffer);
+     array_init(a_inds, NumList, sys.mgr->a_var_num, var_buffer);
+     sys.mgr->a_vars = a_vars;
+     sys.mgr->a_inds = a_inds;
+     array_make_persist(sys.mgr->a_vars);
+     array_make_persist(sys.mgr->a_inds);
+     read_mex_list(sys.mgr->a_inds, _a_inds);
+     for (int i = 0; i < sys.mgr->a_var_num; i++)
      {
-          uint var_ind = array_get(sys.a_inds, i);
-          array_set(sys.a_vars, i, Cudd_bddIthVar(sys.manager, var_ind));
+          uint var_ind = array_get(sys.mgr->a_inds, i);
+          array_set(sys.mgr->a_vars, i, Cudd_bddIthVar(manager, var_ind));
      }
 
      mexPrintf("Creating state in variables\n");
-     array_init(s_in_vars, BDDlist, sys.s_var_num, var_buffer);
-     array_init(s_in_inds, NumList, sys.s_var_num, var_buffer);
-     sys.s_in_vars = s_in_vars;
-     sys.s_in_inds = s_in_inds;
-     array_make_persist(sys.s_in_vars);
-     array_make_persist(sys.s_in_inds);
-     read_mex_list(sys.s_in_inds, _s_in_inds);
-     for (int i = 0; i < sys.s_var_num; i++)
+     array_init(s_in_vars, BDDlist, sys.mgr->s_var_num, var_buffer);
+     array_init(s_in_inds, NumList, sys.mgr->s_var_num, var_buffer);
+     sys.mgr->s_in_vars = s_in_vars;
+     sys.mgr->s_in_inds = s_in_inds;
+     array_make_persist(s_in_vars);
+     array_make_persist(s_in_inds);
+     read_mex_list(sys.mgr->s_in_inds, _s_in_inds);
+     for (int i = 0; i < sys.mgr->s_var_num; i++)
      {
-          uint var_ind = array_get(sys.s_in_inds, i);
-          array_set(sys.s_in_vars, i, Cudd_bddIthVar(sys.manager, var_ind));
+          uint var_ind = array_get(sys.mgr->s_in_inds, i);
+          array_set(sys.mgr->s_in_vars, i, Cudd_bddIthVar(manager, var_ind));
      }
 
      mexPrintf("Creating state out variables\n");
-     array_init(s_out_vars, BDDlist, sys.s_var_num, var_buffer);
-     array_init(s_out_inds, NumList, sys.s_var_num, var_buffer);
-     sys.s_out_vars = s_out_vars;
-     sys.s_out_inds = s_out_inds;
-     array_make_persist(sys.s_out_vars);
-     array_make_persist(sys.s_out_inds);
-     read_mex_list(sys.s_out_inds, _s_out_inds);
-     for (int i = 0; i < sys.s_var_num; i++)
+     array_init(s_out_vars, BDDlist, sys.mgr->s_var_num, var_buffer);
+     array_init(s_out_inds, NumList, sys.mgr->s_var_num, var_buffer);
+     sys.mgr->s_out_vars = s_out_vars;
+     sys.mgr->s_out_inds = s_out_inds;
+     array_make_persist(s_out_vars);
+     array_make_persist(s_out_inds);
+     read_mex_list(sys.mgr->s_out_inds, _s_out_inds);
+     for (int i = 0; i < sys.mgr->s_var_num; i++)
      {
-          uint var_ind = array_get(sys.s_out_inds, i);
-          array_set(sys.s_out_vars, i, Cudd_bddIthVar(sys.manager, var_ind));
+          uint var_ind = array_get(sys.mgr->s_out_inds, i);
+          array_set(sys.mgr->s_out_vars, i, Cudd_bddIthVar(manager, var_ind));
      }
      // save and allocate encodings and add states to sets
      mexPrintf("Allocating encoding lists\n");
      array_init(s_encs, EncList, (uint)mxGetNumberOfElements(_s_encs), s_buffer);
-     array_init(enc_map, NumList, pow(2, sys.s_var_num), pow(2, sys.s_var_num));
+     array_init(enc_map, NumList, pow(2, sys.mgr->s_var_num), pow(2, sys.mgr->s_var_num));
 
-     sys.enc_state_map = enc_map;
+     sys.mgr->enc_state_map = enc_map;
 
      mexPrintf("Adding %d s encodings\n", array_len(s_encs));
      mexEvalString("drawnow;");
@@ -1283,18 +1308,18 @@ BDDSys* loadBDDSys(uint var_num, mxArray* _s_encs, mxArray* _s_in_inds, mxArray*
           mxArray* enc_cell = mxGetCell(_s_encs, i);
           array_init(enc, NumList, mxGetNumberOfElements(enc_cell), var_buffer);
           read_mex_list(enc, enc_cell);
-          uint len_diff = sys.s_var_num - array_len(enc);
+          uint len_diff = sys.mgr->s_var_num - array_len(enc);
           if (len_diff > 0)
                zeropad(enc, array_len(enc), len_diff);
           array_set(s_encs, i, enc);
           array_make_persist(enc);
-          uint key = fromBitArray(array_list(enc), sys.s_var_num);
-          array_set(sys.enc_state_map, key, (uint)i);
+          uint key = fromBitArray(array_list(enc), sys.mgr->s_var_num);
+          array_set(sys.mgr->enc_state_map, key, (uint)i);
           mexPrintf("%d to %d\n", key, i);
      }
-     sys.s_encs = s_encs;
-     array_make_persist(sys.s_encs);
-     array_make_persist(sys.enc_state_map);
+     sys.mgr->s_encs = s_encs;
+     array_make_persist(s_encs);
+     array_make_persist(enc_map);
 
      array_init(a_encs, EncList, mxGetNumberOfElements(_a_encs), s_buffer);
      mexPrintf("Adding %d a encodings\n", array_len(a_encs));
@@ -1310,7 +1335,7 @@ BDDSys* loadBDDSys(uint var_num, mxArray* _s_encs, mxArray* _s_in_inds, mxArray*
                mexPrintf("%d", array_get(enc, j));
           mexPrintf("\n");
           mexEvalString("drawnow;");
-          uint len_diff = sys.a_var_num - array_len(enc);
+          uint len_diff = sys.mgr->a_var_num - array_len(enc);
           mexPrintf("Padding with %d\n", len_diff);
           mexEvalString("drawnow;");
           if (len_diff > 0)
@@ -1320,8 +1345,8 @@ BDDSys* loadBDDSys(uint var_num, mxArray* _s_encs, mxArray* _s_in_inds, mxArray*
           mexPrintf("Added a encoding %d\n", i);
           mexEvalString("drawnow;");
      }
-     sys.a_encs = a_encs;
-     array_make_persist(sys.a_encs);
+     sys.mgr->a_encs = a_encs;
+     array_make_persist(a_encs);
      // allocate pg groups
      array_init(pg_U, BDDlist, 0, pg_buffer);
      array_init(pg_G, BDDlist, 0, pg_buffer);
@@ -1335,7 +1360,7 @@ BDDSys* loadBDDSys(uint var_num, mxArray* _s_encs, mxArray* _s_in_inds, mxArray*
      mexEvalString("drawnow");
      FILE* stream = fopen("temp_sys.dump", "r");
      DdNode** stored_BDDs;
-     Dddmp_cuddBddArrayLoad(sys.manager, DDDMP_ROOT_MATCHLIST, NULL, DDDMP_VAR_MATCHIDS,
+     Dddmp_cuddBddArrayLoad(manager, DDDMP_ROOT_MATCHLIST, NULL, DDDMP_VAR_MATCHIDS,
                               NULL, NULL, NULL, DDDMP_MODE_BINARY, NULL, stream, &stored_BDDs);
      mexPrintf("Loaded stored BDDs\n");
      mexEvalString("drawnow");
@@ -1390,40 +1415,44 @@ void zeropad(NumList* list, uint pos, uint pad_len)
 
 void add_action(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
 {
-     // mexPrintf("Calculating variable difference\n");
-     // mexEvalString("drawnow;");
-     int var_diff = new_var_num - sys->a_var_num;
-     // mexPrintf("Number of new variables: %d\n", var_diff);
-     // mexEvalString("drawnow");
+     DdManager* manager = get_mgr(sys);
+     mexPrintf("Calculating variable difference\n");
+     mexEvalString("drawnow;");
+     int var_diff = new_var_num - sys->mgr->a_var_num;
+     mexPrintf("Number of new variables: %d\n", var_diff);
+     mexEvalString("drawnow");
      // Add new variables
-     if (new_var_num > sys->a_var_num)
+     if (var_diff > 0)
      {
           // zero pad encodings
-          // mexPrintf("Padding encodings: %d\n", array_len(sys->a_encs));
-          for (int i = 0; i < array_len(sys->a_encs); i++)
+          mexPrintf("Writing padding encodings:\n");
+          mexEvalString("drawnow;");
+          mexPrintf("Padding encodings: %d\n", array_len(sys->mgr->a_encs));
+          mexEvalString("drawnow;");
+          for (int i = 0; i < array_len(sys->mgr->a_encs); i++)
           {
-               // mexPrintf("Padding enc %d\n", i);
-               zeropad(array_get(sys->a_encs, i), sys->a_var_num, var_diff);
-
+               mexPrintf("Padding enc %d\n", i);
+               mexEvalString("drawnow");
+               zeropad(array_get(sys->mgr->a_encs, i), sys->mgr->a_var_num, var_diff);
           }
           // create action variables and update BDD
           for (int i = 0; i < var_diff; i++)
           {
                // create new var
-               DdNode* new_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num);
-               array_pushback(sys->a_vars, new_var);
-               array_pushback(sys->a_inds, Cudd_ReadSize(sys->manager)-1);
+               DdNode* new_var = Cudd_bddNewVarAtLevel(manager, sys->mgr->a_var_num);
+               array_pushback(sys->mgr->a_vars, new_var);
+               array_pushback(sys->mgr->a_inds, Cudd_ReadSize(manager)-1);
 
                // update BDD. T & !v
-               DdNode* tmp = Cudd_bddAnd(sys->manager, sys->trans_sys, Cudd_Not(new_var));
+               DdNode* tmp = Cudd_bddAnd(manager, sys->trans_sys, Cudd_Not(new_var));
                Cudd_Ref(tmp);
-               Cudd_RecursiveDeref(sys->manager, sys->trans_sys);
+               Cudd_RecursiveDeref(manager, sys->trans_sys);
                sys->trans_sys = tmp;
 
                // update all actions. A & !v
-               tmp = Cudd_bddAnd(sys->manager, sys->all_actions, Cudd_Not(new_var));
+               tmp = Cudd_bddAnd(manager, sys->all_actions, Cudd_Not(new_var));
                Cudd_Ref(tmp);
-               Cudd_RecursiveDeref(sys->manager, sys->all_actions);
+               Cudd_RecursiveDeref(manager, sys->all_actions);
                sys->all_actions = tmp;
 
                //update progress groups
@@ -1431,41 +1460,41 @@ void add_action(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
                {
                     if (array_get(sys->pg_U, i) != NULL)
                     {
-                         tmp = Cudd_bddAnd(sys->manager, array_get(sys->pg_U, i), Cudd_Not(new_var));
+                         tmp = Cudd_bddAnd(manager, array_get(sys->pg_U, i), Cudd_Not(new_var));
                          Cudd_Ref(tmp);
-                         Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_U, i));
+                         Cudd_RecursiveDeref(manager, array_get(sys->pg_U, i));
                          array_set(sys->pg_U, i, tmp);
                     }
                }
           }
-          sys->a_var_num = new_var_num;
+          sys->mgr->a_var_num = new_var_num;
      }
 
      // could need insertion
-     // mexPrintf("Inserting\n");
-     array_insert(sys->a_encs, index, enc);
+     mexPrintf("Inserting\n");
+     array_insert(sys->mgr->a_encs, index, enc);
      array_make_persist(enc);
 
      // add action to all_actions set
-     // mexPrintf("Adding to set\n");
-     DdNode* action_cube = Cudd_bddComputeCube(sys->manager, array_list(sys->a_vars), array_list(enc), new_var_num);
+     mexPrintf("Adding to set\n");
+     DdNode* action_cube = Cudd_bddComputeCube(manager, array_list(sys->mgr->a_vars), array_list(enc), new_var_num);
      Cudd_Ref(action_cube);
-     // mexPrintf("Created cube\n");
-     DdNode* tmp = Cudd_bddOr(sys->manager, sys->all_actions, action_cube);
+     mexPrintf("Created cube\n");
+     DdNode* tmp = Cudd_bddOr(manager, sys->all_actions, action_cube);
      Cudd_Ref(tmp);
-     // mexPrintf("Created union\n");
-     Cudd_RecursiveDeref(sys->manager, action_cube);
-     Cudd_RecursiveDeref(sys->manager, sys->all_actions);
+     mexPrintf("Created union\n");
+     Cudd_RecursiveDeref(manager, action_cube);
+     Cudd_RecursiveDeref(manager, sys->all_actions);
      sys->all_actions = tmp;
 
      // debug info
-     // mexPrintf("Result encodings: %d\n", array_len(sys->a_encs));
-     // for (int i = 0; i < array_len(sys->a_encs); i++)
+     // mexPrintf("Result encodings: %d\n", array_len(sys->mgr->a_encs));
+     // for (int i = 0; i < array_len(sys->mgr->a_encs); i++)
      // {
-     //      // mexPrintf("Writing encoding of len %d: ", array_len(array_get(sys->a_encs, i)));
-     //      for (int j = 0; j < array_len(array_get(sys->a_encs, i)); j++)
+     //      // mexPrintf("Writing encoding of len %d: ", array_len(array_get(sys->mgr->a_encs, i)));
+     //      for (int j = 0; j < array_len(array_get(sys->mgr->a_encs, i)); j++)
      //      {
-     //           // mexPrintf("%d", array_get(array_get(sys->a_encs, i), j));
+     //           // mexPrintf("%d", array_get(array_get(sys->mgr->a_encs, i), j));
      //      }
      //      // mexPrintf(" ");
      // }
@@ -1481,17 +1510,18 @@ void add_action(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
 
 void add_state(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
 {
-     int var_diff = new_var_num - sys->s_var_num;
+     DdManager* manager = get_mgr(sys);
+     int var_diff = new_var_num - sys->mgr->s_var_num;
      // mexPrintf("New variables: %d\n", var_diff);
      // mexEvalString("drawnow;");
      // Add new variables
-     if (new_var_num > sys->s_var_num)
+     if (new_var_num > sys->mgr->s_var_num)
      {
           // zero pad encodings
           // mexPrintf("Padding all encodings\n");
           // mexEvalString("drawnow;");
-          for (int i = 0; i < array_len(sys->s_encs); i++)
-               zeropad(array_get(sys->s_encs, i), sys->s_var_num, var_diff);
+          for (int i = 0; i < array_len(sys->mgr->s_encs); i++)
+               zeropad(array_get(sys->mgr->s_encs, i), sys->mgr->s_var_num, var_diff);
 
           // create state variables and update BDD
           for (int i = 0; i < var_diff; i++)
@@ -1499,26 +1529,26 @@ void add_state(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
                // mexPrintf("Adding variable: %d\n", i);
                // mexEvalString("drawnow;");
                // create new var
-               DdNode* new_in_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num + sys->s_var_num);
-               array_pushback(sys->s_in_vars, new_in_var);
-               array_pushback(sys->s_in_inds, Cudd_ReadSize(sys->manager)-1);
-               DdNode* new_out_var = Cudd_bddNewVarAtLevel(sys->manager, sys->a_var_num + 2*sys->s_var_num);
-               array_pushback(sys->s_out_vars, new_out_var);
-               array_pushback(sys->s_out_inds, Cudd_ReadSize(sys->manager)-1);
+               DdNode* new_in_var = Cudd_bddNewVarAtLevel(manager, sys->mgr->a_var_num + sys->mgr->s_var_num);
+               array_pushback(sys->mgr->s_in_vars, new_in_var);
+               array_pushback(sys->mgr->s_in_inds, Cudd_ReadSize(manager)-1);
+               DdNode* new_out_var = Cudd_bddNewVarAtLevel(manager, sys->mgr->a_var_num + 2*sys->mgr->s_var_num);
+               array_pushback(sys->mgr->s_out_vars, new_out_var);
+               array_pushback(sys->mgr->s_out_inds, Cudd_ReadSize(manager)-1);
 
                // update BDD. T & !v_in & !v_out = T & !(v_in | v_out)
-               DdNode* var_bdd = Cudd_bddOr(sys->manager, new_in_var, new_out_var);
+               DdNode* var_bdd = Cudd_bddOr(manager, new_in_var, new_out_var);
                Cudd_Ref(var_bdd);
-               DdNode* tmp = Cudd_bddAnd(sys->manager, sys->trans_sys, Cudd_Not(var_bdd));
+               DdNode* tmp = Cudd_bddAnd(manager, sys->trans_sys, Cudd_Not(var_bdd));
                Cudd_Ref(tmp);
-               Cudd_RecursiveDeref(sys->manager, var_bdd);
-               Cudd_RecursiveDeref(sys->manager, sys->trans_sys);
+               Cudd_RecursiveDeref(manager, var_bdd);
+               Cudd_RecursiveDeref(manager, sys->trans_sys);
                sys->trans_sys = tmp;
 
                // update all states. S & !(v_out)
-               tmp = Cudd_bddAnd(sys->manager, sys->all_states, Cudd_Not(new_out_var));
+               tmp = Cudd_bddAnd(manager, sys->all_states, Cudd_Not(new_out_var));
                Cudd_Ref(tmp);
-               Cudd_RecursiveDeref(sys->manager, sys->all_states);
+               Cudd_RecursiveDeref(manager, sys->all_states);
                sys->all_states = tmp;
 
                //update progress groups
@@ -1526,20 +1556,20 @@ void add_state(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
                {
                     if (array_get(sys->pg_G, i) != NULL)
                     {
-                         tmp = Cudd_bddAnd(sys->manager, array_get(sys->pg_G, i), Cudd_Not(new_out_var));
+                         tmp = Cudd_bddAnd(manager, array_get(sys->pg_G, i), Cudd_Not(new_out_var));
                          Cudd_Ref(tmp);
-                         Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_G, i));
+                         Cudd_RecursiveDeref(manager, array_get(sys->pg_G, i));
                          array_set(sys->pg_G, i, tmp);
                     }
                }
           }
-          sys->s_var_num = new_var_num;
+          sys->mgr->s_var_num = new_var_num;
      }
 
      // mexEvalString("memory");
      // mexPrintf("Inserting state\n");
      // mexEvalString("drawnow;");
-     array_insert(sys->s_encs, index, enc);
+     array_insert(sys->mgr->s_encs, index, enc);
      array_make_persist(enc);
      // mexPrintf("Encoding ");
      // mexEvalString("drawnow;");
@@ -1548,46 +1578,47 @@ void add_state(BDDSys* sys, uint index, NumList* enc, uint new_var_num)
      // mexEvalString("drawnow;");
      // mexPrintf(" inserted at %d\n", index);
      // mexEvalString("drawnow;");
-     if (array_len(sys->s_encs) > array_len(sys->enc_state_map))
+     if (array_len(sys->mgr->s_encs) > array_len(sys->mgr->enc_state_map))
      {
-          array_growby(sys->enc_state_map, array_len(sys->enc_state_map));
+          array_growby(sys->mgr->enc_state_map, array_len(sys->mgr->enc_state_map));
      }
      uint key = fromBitArray(array_list(enc), array_len(enc));
-     while (key >= array_len(sys->enc_state_map))
-          array_pushback(sys->enc_state_map, 0);
-     array_set(sys->enc_state_map, key, index);
+     while (key >= array_len(sys->mgr->enc_state_map))
+          array_pushback(sys->mgr->enc_state_map, 0);
+          array_set(sys->mgr->enc_state_map, key, index);
      // mexEvalString("memory");
 
      // add state to all_states (out) set
      // mexPrintf("Adding state to union\n");
      // mexEvalString("drawnow;");
-     DdNode* state_cube = Cudd_bddComputeCube(sys->manager, array_list(sys->s_out_vars), array_list(enc), array_len(enc));
+     DdNode* state_cube = Cudd_bddComputeCube(manager, array_list(sys->mgr->s_out_vars), array_list(enc), array_len(enc));
      Cudd_Ref(state_cube);
-     DdNode* tmp = Cudd_bddOr(sys->manager, sys->all_states, state_cube);
+     DdNode* tmp = Cudd_bddOr(manager, sys->all_states, state_cube);
      Cudd_Ref(tmp);
-     Cudd_RecursiveDeref(sys->manager, state_cube);
-     Cudd_RecursiveDeref(sys->manager, sys->all_states);
+     Cudd_RecursiveDeref(manager, state_cube);
+     Cudd_RecursiveDeref(manager, sys->all_states);
      sys->all_states = tmp;
 }
 
 void set_state_enc(BDDSys* sys, uint ind, NumList* enc)
 {
-     // mexPrintf("Setting state %d/%d\n", ind, array_len(sys->s_encs));
-     while (ind >= array_alloc_size(sys->s_encs))
+     // mexPrintf("Setting state %d/%d\n", ind, array_len(sys->mgr->s_encs));
+     while (ind >= array_alloc_size(sys->mgr->s_encs))
      {
           // mexPrintf("Growing\n");
-          array_grow(sys->s_encs);
+          array_grow(sys->mgr->s_encs);
      }
-     array_set(sys->s_encs, ind, enc);
+     array_set(sys->mgr->s_encs, ind, enc);
      array_make_persist(enc);
      uint key = fromBitArray(array_list(enc), array_len(enc));
      // mexPrintf("Setting map %d to %d\n", key, ind);
-     array_set(sys->enc_state_map, key, ind);
+     array_set(sys->mgr->enc_state_map, key, ind);
 }
 
 void add_trans(BDDSys* sys, NumList* in_states, NumList* actions, NumList* out_states)
 {
-     DdNode* trans_BDD = Cudd_ReadLogicZero(sys->manager);
+     DdManager* manager = get_mgr(sys);
+     DdNode* trans_BDD = Cudd_ReadLogicZero(manager);
      Cudd_Ref(trans_BDD);
      DdNode* tmp;
      for (int t = 0; t < array_len(in_states); t++)
@@ -1597,138 +1628,140 @@ void add_trans(BDDSys* sys, NumList* in_states, NumList* actions, NumList* out_s
           uint out_state = array_get(out_states, t);
           // make transition cube
           // mexPrintf("In cube for %d: ", in_state);
-          // for (int i = 0; i < array_len(array_get(sys->s_encs, in_state)); i++)
+          // for (int i = 0; i < array_len(array_get(sys->mgr->s_encs, in_state)); i++)
           // {
-          //      NumList* enc = array_get(sys->s_encs, in_state);
+          //      NumList* enc = array_get(sys->mgr->s_encs, in_state);
                // mexPrintf("%d", array_get(enc, i));
           // }
           // mexPrintf("\n");
-          DdNode* in_cube = Cudd_bddComputeCube(sys->manager, array_list(sys->s_in_vars), array_list(array_get(sys->s_encs, in_state)), sys->s_var_num);
+          DdNode* in_cube = Cudd_bddComputeCube(manager, array_list(sys->mgr->s_in_vars), array_list(array_get(sys->mgr->s_encs, in_state)), sys->mgr->s_var_num);
           // mexPrintf("Made in cube\n");
           // mexPrintf("Out cube for %d: ", out_state);
-          // for (int i = 0; i < array_len(array_get(sys->s_encs, out_state)); i++)
+          // for (int i = 0; i < array_len(array_get(sys->mgr->s_encs, out_state)); i++)
           // {
-          //      NumList* enc = array_get(sys->s_encs, out_state);
+          //      NumList* enc = array_get(sys->mgr->s_encs, out_state);
           //      mexPrintf("%d", array_get(enc, i));
           // }
           // mexPrintf("\n");
-          DdNode* out_cube = Cudd_bddComputeCube(sys->manager, array_list(sys->s_out_vars), array_list(array_get(sys->s_encs, out_state)), sys->s_var_num);
+          DdNode* out_cube = Cudd_bddComputeCube(manager, array_list(sys->mgr->s_out_vars), array_list(array_get(sys->mgr->s_encs, out_state)), sys->mgr->s_var_num);
           // mexPrintf("Made out cube\n");
           // mexPrintf("action cube for %d: ", action);
-          // for (int i = 0; i < array_len(array_get(sys->a_encs, action)); i++)
+          // for (int i = 0; i < array_len(array_get(sys->mgr->a_encs, action)); i++)
           // {
-          //      NumList* enc = array_get(sys->a_encs, action);
+          //      NumList* enc = array_get(sys->mgr->a_encs, action);
                // mexPrintf("%d", array_get(enc, i));
           // }
           // mexPrintf("\n");
-          DdNode* action_cube = Cudd_bddComputeCube(sys->manager, array_list(sys->a_vars), array_list(array_get(sys->a_encs, action)), sys->a_var_num);
-          // mexPrintf("Made actions cube\n");
+          DdNode* action_cube = Cudd_bddComputeCube(manager, array_list(sys->mgr->a_vars), array_list(array_get(sys->mgr->a_encs, action)), sys->mgr->a_var_num);
+          // mexPrmgr->intf("Made actions cube\n");
           Cudd_Ref(in_cube);
           Cudd_Ref(out_cube);
           Cudd_Ref(action_cube);
           // mexPrintf("Variable cubes computed\n");
 
           // mexPrintf("Making transition cube\n");
-          DdNode* trans_cube = Cudd_bddAnd(sys->manager, action_cube, in_cube);
+          DdNode* trans_cube = Cudd_bddAnd(manager, action_cube, in_cube);
           Cudd_Ref(trans_cube);
-          tmp = Cudd_bddAnd(sys->manager, trans_cube, out_cube);
+          tmp = Cudd_bddAnd(manager, trans_cube, out_cube);
           Cudd_Ref(tmp);
-          Cudd_RecursiveDeref(sys->manager, trans_cube);
+          Cudd_RecursiveDeref(manager, trans_cube);
           trans_cube = tmp;
-          Cudd_RecursiveDeref(sys->manager, in_cube);
-          Cudd_RecursiveDeref(sys->manager, out_cube);
-          Cudd_RecursiveDeref(sys->manager, action_cube);
+          Cudd_RecursiveDeref(manager, in_cube);
+          Cudd_RecursiveDeref(manager, out_cube);
+          Cudd_RecursiveDeref(manager, action_cube);
           // mexPrintf("Transition cube made\n");
 
-          tmp = Cudd_bddOr(sys->manager, trans_BDD, trans_cube);
+          tmp = Cudd_bddOr(manager, trans_BDD, trans_cube);
           Cudd_Ref(tmp);
-          Cudd_RecursiveDeref(sys->manager, trans_cube);
-          Cudd_RecursiveDeref(sys->manager, trans_BDD);
+          Cudd_RecursiveDeref(manager, trans_cube);
+          Cudd_RecursiveDeref(manager, trans_BDD);
           trans_BDD = tmp;
      }
      // append system with transition
      // T | trans
      // mexPrintf("Adding transition to union\n");
-     tmp = Cudd_bddOr(sys->manager, sys->trans_sys, trans_BDD);
+     tmp = Cudd_bddOr(manager, sys->trans_sys, trans_BDD);
      Cudd_Ref(tmp);
-     Cudd_RecursiveDeref(sys->manager, sys->trans_sys);
+     Cudd_RecursiveDeref(manager, sys->trans_sys);
      sys->trans_sys = tmp;
-     Cudd_RecursiveDeref(sys->manager, trans_BDD);
+     Cudd_RecursiveDeref(manager, trans_BDD);
 }
 
 DdNode* get_trans_with_s(BDDSys* sys, NumList* states)
 {
+     DdManager* manager = get_mgr(sys);
      DdNode* tmp;
      // make BDD set X_out
-     DdNode* stateBDD = Cudd_ReadLogicZero(sys->manager);
+     DdNode* stateBDD = Cudd_ReadLogicZero(manager);
      Cudd_Ref(stateBDD);
      for (int i = 0; i < array_len(states); i++)
      {
-          DdNode* state_cube = Cudd_bddComputeCube(sys->manager, array_list(sys->s_out_vars), array_list(array_get(sys->s_encs, array_get(states, i))), sys->s_var_num);
+          DdNode* state_cube = Cudd_bddComputeCube(manager, array_list(sys->mgr->s_out_vars), array_list(array_get(sys->mgr->s_encs, array_get(states, i))), sys->mgr->s_var_num);
           Cudd_Ref(state_cube);
-          tmp = Cudd_bddOr(sys->manager, state_cube, stateBDD);
+          tmp = Cudd_bddOr(manager, state_cube, stateBDD);
           Cudd_Ref(tmp);
-          Cudd_RecursiveDeref(sys->manager, state_cube);
-          Cudd_RecursiveDeref(sys->manager, stateBDD);
+          Cudd_RecursiveDeref(manager, state_cube);
+          Cudd_RecursiveDeref(manager, stateBDD);
           stateBDD = tmp;
      }
 
      // compute (in, a, state) pairs, T & X_out
-     DdNode* in_transitions = Cudd_bddAnd(sys->manager, sys->trans_sys, stateBDD);
+     DdNode* in_transitions = Cudd_bddAnd(manager, sys->trans_sys, stateBDD);
      Cudd_Ref(in_transitions);
 
      // compute (state, a, out) pairs, T & X_in
-     tmp = Cudd_bddSwapVariables(sys->manager, stateBDD, array_list(sys->s_out_vars), array_list(sys->s_in_vars), sys->s_var_num);
+     tmp = Cudd_bddSwapVariables(manager, stateBDD, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
      Cudd_Ref(tmp);
-     Cudd_RecursiveDeref(sys->manager, stateBDD);
+     Cudd_RecursiveDeref(manager, stateBDD);
      stateBDD = tmp;
-     DdNode* out_transitions = Cudd_bddAnd(sys->manager, sys->trans_sys, stateBDD);
+     DdNode* out_transitions = Cudd_bddAnd(manager, sys->trans_sys, stateBDD);
      Cudd_Ref(out_transitions);
-     Cudd_RecursiveDeref(sys->manager, stateBDD);
+     Cudd_RecursiveDeref(manager, stateBDD);
 
      // Make union of all pairs
-     DdNode* all_pairs = Cudd_bddOr(sys->manager, in_transitions, out_transitions);
+     DdNode* all_pairs = Cudd_bddOr(manager, in_transitions, out_transitions);
      Cudd_Ref(all_pairs);
-     Cudd_RecursiveDeref(sys->manager, in_transitions);
-     Cudd_RecursiveDeref(sys->manager, out_transitions);
+     Cudd_RecursiveDeref(manager, in_transitions);
+     Cudd_RecursiveDeref(manager, out_transitions);
 
      return all_pairs;
 }
 
 void rm_trans_with_s(BDDSys* sys, NumList* states)
 {
+     DdManager* manager = get_mgr(sys);
      DdNode* tmp;
-     DdNode* stateBDD = Cudd_ReadLogicZero(sys->manager);
+     DdNode* stateBDD = Cudd_ReadLogicZero(manager);
      Cudd_Ref(stateBDD);
      // make (out)state BDD
      for (int i = 0; i < array_len(states); i++)
      {
-          DdNode* state_cube = Cudd_bddComputeCube(sys->manager, array_list(sys->s_out_vars), array_list(array_get(sys->s_encs, array_get(states, i))), sys->s_var_num);
+          DdNode* state_cube = Cudd_bddComputeCube(manager, array_list(sys->mgr->s_out_vars), array_list(array_get(sys->mgr->s_encs, array_get(states, i))), sys->mgr->s_var_num);
           Cudd_Ref(state_cube);
-          tmp = Cudd_bddOr(sys->manager, state_cube, stateBDD);
+          tmp = Cudd_bddOr(manager, state_cube, stateBDD);
           Cudd_Ref(tmp);
-          Cudd_RecursiveDeref(sys->manager, state_cube);
-          Cudd_RecursiveDeref(sys->manager, stateBDD);
+          Cudd_RecursiveDeref(manager, state_cube);
+          Cudd_RecursiveDeref(manager, stateBDD);
           stateBDD = tmp;
      }
 
      // remove X_out, T = T & !X_out
-     tmp = Cudd_bddAnd(sys->manager, sys->trans_sys, Cudd_Not(stateBDD));
+     tmp = Cudd_bddAnd(manager, sys->trans_sys, Cudd_Not(stateBDD));
      Cudd_Ref(tmp);
-     Cudd_RecursiveDeref(sys->manager, sys->trans_sys);
+     Cudd_RecursiveDeref(manager, sys->trans_sys);
      sys->trans_sys = tmp;
 
      // make (in)state BDD
-     tmp = Cudd_bddSwapVariables(sys->manager, stateBDD, array_list(sys->s_out_vars), array_list(sys->s_in_vars), sys->s_var_num);
+     tmp = Cudd_bddSwapVariables(manager, stateBDD, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
      Cudd_Ref(tmp);
-     Cudd_RecursiveDeref(sys->manager, stateBDD);
+     Cudd_RecursiveDeref(manager, stateBDD);
      stateBDD = tmp;
 
      // remove X_in, T = T & !X_in
-     tmp = Cudd_bddAnd(sys->manager, sys->trans_sys, Cudd_Not(stateBDD));
+     tmp = Cudd_bddAnd(manager, sys->trans_sys, Cudd_Not(stateBDD));
      Cudd_Ref(tmp);
-     Cudd_RecursiveDeref(sys->manager, sys->trans_sys);
-     Cudd_RecursiveDeref(sys->manager, stateBDD);
+     Cudd_RecursiveDeref(manager, sys->trans_sys);
+     Cudd_RecursiveDeref(manager, stateBDD);
      sys->trans_sys = tmp;
 }
 
@@ -1741,8 +1774,9 @@ void add_progress_group(BDDSys* sys, NumList* U, NumList* G)
      // for (int i = 0; i < array_len(G); i++)
      //      mexPrintf("%d ", array_get(G, i));
      // mexPrintf("\n");
-     DdNode* U_bdd = makeSet(sys->manager, array_list(sys->a_vars), sys->a_var_num, array_list(U), array_len(U), sys->a_encs);
-     DdNode* G_bdd = makeSet(sys->manager, array_list(sys->s_out_vars), sys->s_var_num, array_list(G), array_len(G), sys->s_encs);
+     DdManager* manager = get_mgr(sys);
+     DdNode* U_bdd = makeSet(manager, array_list(sys->mgr->a_vars), sys->mgr->a_var_num, array_list(U), array_len(U), sys->mgr->a_encs);
+     DdNode* G_bdd = makeSet(manager, array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num, array_list(G), array_len(G), sys->mgr->s_encs);
      mexPrintf("Made BDDs of groups\n");
      if (U_bdd == NULL)
           mexPrintf("U NULL\n");
@@ -1759,8 +1793,8 @@ void add_progress_group(BDDSys* sys, NumList* U, NumList* G)
                mexPrintf("Group %d empty\n", i);
                continue;
           }
-          if (Cudd_EquivDC(sys->manager, U_bdd, array_get(sys->pg_U, i), Cudd_Not(array_get(sys->pg_U, i)))
-               && Cudd_EquivDC(sys->manager, G_bdd, array_get(sys->pg_G, i), Cudd_Not(array_get(sys->pg_G, i))))
+          if (Cudd_EquivDC(manager, U_bdd, array_get(sys->pg_U, i), Cudd_Not(array_get(sys->pg_U, i)))
+               && Cudd_EquivDC(manager, G_bdd, array_get(sys->pg_G, i), Cudd_Not(array_get(sys->pg_G, i))))
           {
                rm_progress_group(sys, i);
           }
@@ -1778,8 +1812,8 @@ void rm_progress_group(BDDSys* sys, uint index)
 {
      if (index >= 0 && index < array_len(sys->pg_U))
      {
-          Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_U, index));
-          Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_G, index));
+          Cudd_RecursiveDeref(get_mgr(sys), array_get(sys->pg_U, index));
+          Cudd_RecursiveDeref(get_mgr(sys), array_get(sys->pg_G, index));
           array_remove(sys->pg_U, index);
           array_remove(sys->pg_G, index);
      }
@@ -1789,8 +1823,9 @@ void rm_progress_group(BDDSys* sys, uint index)
 
 int has_superior_pg(BDDSys* sys, NumList* U, NumList* G)
 {
-     DdNode* U_bdd = (DdNode*)makeSet(sys->manager, array_list(sys->a_vars), sys->a_var_num, array_list(U), array_len(U), sys->a_encs);
-     DdNode* G_bdd = (DdNode*)makeSet(sys->manager, array_list(sys->s_out_vars), sys->s_var_num, array_list(G), array_len(G), sys->s_encs);
+     DdManager* manager = get_mgr(sys);
+     DdNode* U_bdd = (DdNode*)makeSet(manager, array_list(sys->mgr->a_vars), sys->mgr->a_var_num, array_list(U), array_len(U), sys->mgr->a_encs);
+     DdNode* G_bdd = (DdNode*)makeSet(manager, array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num, array_list(G), array_len(G), sys->mgr->s_encs);
 
      for (int i = 0; i < array_len(sys->pg_U); i++)
      {
@@ -1800,23 +1835,24 @@ int has_superior_pg(BDDSys* sys, NumList* U, NumList* G)
                || array_get(sys->pg_G, i) == NULL)
                continue;
 
-          if (Cudd_EquivDC(sys->manager, array_get(sys->pg_U, i), U_bdd, Cudd_Not(U_bdd))
-               && Cudd_EquivDC(sys->manager, array_get(sys->pg_G, i), G_bdd, Cudd_Not(G_bdd)))
+          if (Cudd_EquivDC(manager, array_get(sys->pg_U, i), U_bdd, Cudd_Not(U_bdd))
+               && Cudd_EquivDC(manager, array_get(sys->pg_G, i), G_bdd, Cudd_Not(G_bdd)))
           {
-               Cudd_RecursiveDeref(sys->manager, U_bdd);
-               Cudd_RecursiveDeref(sys->manager, G_bdd);
+               Cudd_RecursiveDeref(manager, U_bdd);
+               Cudd_RecursiveDeref(manager, G_bdd);
                return 1;
           }
      }
 
-     Cudd_RecursiveDeref(sys->manager, U_bdd);
-     Cudd_RecursiveDeref(sys->manager, G_bdd);
+     Cudd_RecursiveDeref(manager, U_bdd);
+     Cudd_RecursiveDeref(manager, G_bdd);
      return 0;
 }
 
 void add_to_pg(BDDSys* sys, NumList* indices, NumList* states)
 {
-     DdNode* G_add = makeSet(sys->manager, array_list(sys->s_out_vars), sys->s_var_num, array_list(states), array_len(states), sys->s_encs);
+     DdManager* manager = get_mgr(sys);
+     DdNode* G_add = makeSet(manager, array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num, array_list(states), array_len(states), sys->mgr->s_encs);
 
      for (int i = 0; i < array_len(indices); i++)
      {
@@ -1827,16 +1863,17 @@ void add_to_pg(BDDSys* sys, NumList* indices, NumList* states)
                // TODO: Do something or error?
                continue;
           }
-          DdNode* tmp = Cudd_bddOr(sys->manager, array_get(sys->pg_G, j), G_add);
+          DdNode* tmp = Cudd_bddOr(manager, array_get(sys->pg_G, j), G_add);
           Cudd_Ref(tmp);
-          Cudd_RecursiveDeref(sys->manager, array_get(sys->pg_G, j));
+          Cudd_RecursiveDeref(manager, array_get(sys->pg_G, j));
           array_set(sys->pg_G, j, tmp);
      }
-     Cudd_RecursiveDeref(sys->manager, G_add);
+     Cudd_RecursiveDeref(manager, G_add);
 }
 
 NumList* is_member_of_pg(BDDSys* sys, NumList* states)
 {
+     DdManager* manager = get_mgr(sys);
      uint ind_num = 0;
      // mexPrintf("Making the index list\n");
      // mexEvalString("drawnow;");
@@ -1844,7 +1881,7 @@ NumList* is_member_of_pg(BDDSys* sys, NumList* states)
 
      // mexPrintf("Making the state BDD\n");
      // mexEvalString("drawnow;");
-     DdNode* state_bdd = makeSet(sys->manager, array_list(sys->s_out_vars), sys->s_var_num, array_list(states), array_len(states), sys->s_encs);
+     DdNode* state_bdd = makeSet(manager, array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num, array_list(states), array_len(states), sys->mgr->s_encs);
      uint** parts = read_out_states(sys, state_bdd);
      uint len = *(parts[0]);
      // mexPrintf("Checking inputs\n");
@@ -1859,7 +1896,7 @@ NumList* is_member_of_pg(BDDSys* sys, NumList* states)
           // mexPrintf("Checking inside\n");
           // mexEvalString("drawnow;");
           if (array_get(sys->pg_G, i) != NULL
-               && Cudd_EquivDC(sys->manager, array_get(sys->pg_G, i), state_bdd, Cudd_Not(state_bdd)))
+               && Cudd_EquivDC(manager, array_get(sys->pg_G, i), state_bdd, Cudd_Not(state_bdd)))
           {
                // mexPrintf("Found something\n");
                // mexEvalString("drawnow;");
@@ -1868,14 +1905,14 @@ NumList* is_member_of_pg(BDDSys* sys, NumList* states)
      }
      mxFree(parts[1]);
      mxFree(parts);
-     Cudd_RecursiveDeref(sys->manager, state_bdd);
+     Cudd_RecursiveDeref(manager, state_bdd);
      // mexPrintf("Done\n");
      return indices;
 }
 
 uint get_num_of_trans(BDDSys* sys, DdNode* bdd)
 {
-     return Cudd_CountMinterm(sys->manager, bdd, 2*sys->s_var_num + sys->a_var_num);
+     return Cudd_CountMinterm(get_mgr(sys), bdd, 2*sys->mgr->s_var_num + sys->mgr->a_var_num);
 }
 
 uint** read_transitions(BDDSys* sys, DdNode* T)
@@ -1894,19 +1931,19 @@ uint** read_transitions(BDDSys* sys, DdNode* T)
      outputs[3] = out_states;
 
      NumList** intervals = mxMalloc(sizeof(NumList*)*3);
-     intervals[0] = sys->s_in_inds;
-     intervals[1] = sys->a_inds;
-     intervals[2] = sys->s_out_inds;
-     array_init(cube_inds, NumList, 0, sys->a_var_num + 2*sys->s_var_num);
-     for (int i = 0; i < sys->s_var_num; i++)
+     intervals[0] = sys->mgr->s_in_inds;
+     intervals[1] = sys->mgr->a_inds;
+     intervals[2] = sys->mgr->s_out_inds;
+     array_init(cube_inds, NumList, 0, sys->mgr->a_var_num + 2*sys->mgr->s_var_num);
+     for (int i = 0; i < sys->mgr->s_var_num; i++)
      {
           array_pushback(cube_inds, array_get(intervals[0], i));
      }
-     for (int i = 0; i < sys->a_var_num; i++)
+     for (int i = 0; i < sys->mgr->a_var_num; i++)
      {
           array_pushback(cube_inds, array_get(intervals[1], i));
      }
-     for (int i = 0; i < sys->s_var_num; i++)
+     for (int i = 0; i < sys->mgr->s_var_num; i++)
      {
           array_pushback(cube_inds, array_get(intervals[2], i));
      }
@@ -1914,15 +1951,15 @@ uint** read_transitions(BDDSys* sys, DdNode* T)
      DdGen* gen;
      int* cube;
      CUDD_VALUE_TYPE value;
-     Cudd_ForeachCube(sys->manager, T, gen, cube, value)
+     Cudd_ForeachCube(get_mgr(sys), T, gen, cube, value)
      {
           read_in(intervals, 3, cube_inds, cube, 0, &(outputs[1]), &trans_num);
      }
      // convert keys to state
      for (int i = 0; i < trans_num; i++)
      {
-          outputs[1][i] = array_get(sys->enc_state_map, outputs[1][i]);
-          outputs[3][i] = array_get(sys->enc_state_map, outputs[3][i]);
+          outputs[1][i] = array_get(sys->mgr->enc_state_map, outputs[1][i]);
+          outputs[3][i] = array_get(sys->mgr->enc_state_map, outputs[3][i]);
      }
 
      mxFree(intervals);
@@ -1933,7 +1970,7 @@ uint** read_transitions(BDDSys* sys, DdNode* T)
 
 uint** read_in_states(BDDSys* sys, DdNode* T)
 {
-     uint max_trans_num = array_len(sys->s_encs);
+     uint max_trans_num = array_len(sys->mgr->s_encs);
      uint state_num = 0;
 
      uint* in_states = mxMalloc(sizeof(uint)*max_trans_num);
@@ -1944,20 +1981,20 @@ uint** read_in_states(BDDSys* sys, DdNode* T)
      DdGen* gen;
      int* cube;
      CUDD_VALUE_TYPE value;
-     Cudd_ForeachCube(sys->manager, T, gen, cube, value)
+     Cudd_ForeachCube(get_mgr(sys), T, gen, cube, value)
      {
-          read_in(&sys->s_in_inds, 1, sys->s_in_inds, cube, 0, &(outputs[1]), &state_num);
+          read_in(&sys->mgr->s_in_inds, 1, sys->mgr->s_in_inds, cube, 0, &(outputs[1]), &state_num);
      }
      // convert keys to state
      for (int i = 0; i < state_num; i++)
-          outputs[1][i] = array_get(sys->enc_state_map, outputs[1][i]);
+          outputs[1][i] = array_get(sys->mgr->enc_state_map, outputs[1][i]);
 
      return outputs;
 }
 
 uint** read_out_states(BDDSys* sys, DdNode* T)
 {
-     uint max_state_num = array_len(sys->s_encs);
+     uint max_state_num = array_len(sys->mgr->s_encs);
      uint state_num = 0;
 
      uint* out_states = mxMalloc(sizeof(uint)*max_state_num);
@@ -1968,22 +2005,22 @@ uint** read_out_states(BDDSys* sys, DdNode* T)
      DdGen* gen;
      int* cube;
      CUDD_VALUE_TYPE value;
-     Cudd_ForeachCube(sys->manager, T, gen, cube, value)
+     Cudd_ForeachCube(get_mgr(sys), T, gen, cube, value)
      {
-          read_in(&sys->s_out_inds, 1, sys->s_out_inds, cube, 0, &out_states, &state_num);
+          read_in(&sys->mgr->s_out_inds, 1, sys->mgr->s_out_inds, cube, 0, &out_states, &state_num);
      }
      // convert keys to state
      for (int i = 0; i < state_num; i++)
      {
-          // mexPrintf("Converting %d to %d\n", outputs[1][i], array_get(sys->enc_state_map, outputs[1][i]));
-          outputs[1][i] = array_get(sys->enc_state_map, outputs[1][i]);
+          // mexPrintf("Converting %d to %d\n", outputs[1][i], array_get(sys->mgr->enc_state_map, outputs[1][i]));
+          outputs[1][i] = array_get(sys->mgr->enc_state_map, outputs[1][i]);
      }
      return outputs;
 }
 
 uint** read_actions(BDDSys* sys, DdNode* T)
 {
-     uint max_trans_num = array_len(sys->a_encs);
+     uint max_trans_num = array_len(sys->mgr->a_encs);
      uint action_num = 0;
 
      uint* a_states = mxMalloc(sizeof(uint)*max_trans_num);
@@ -1993,9 +2030,9 @@ uint** read_actions(BDDSys* sys, DdNode* T)
      int* cube;
      CUDD_VALUE_TYPE value;
      int cube_count = 0;
-     Cudd_ForeachCube(sys->manager, T, gen, cube, value)
+     Cudd_ForeachCube(get_mgr(sys), T, gen, cube, value)
      {
-          read_in(&sys->a_inds, 1, sys->a_inds, cube, 0, &a_states, &action_num);
+          read_in(&sys->mgr->a_inds, 1, sys->mgr->a_inds, cube, 0, &a_states, &action_num);
      }
      outputs[0] = &action_num;
      outputs[1] = a_states;
@@ -2091,9 +2128,9 @@ DdNode* read_BDD_from_mxarray(BDDSys* sys, const mxArray* array, char setting)
      read_set_list(inds, array);
      DdNode* bdd;
      if (setting == 's')
-          bdd = makeSet(sys->manager, array_list(sys->s_out_vars), sys->s_var_num, array_list(inds), len, sys->s_encs);
+          bdd = makeSet(get_mgr(sys), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num, array_list(inds), len, sys->mgr->s_encs);
      else if (setting == 'a')
-          bdd = makeSet(sys->manager, array_list(sys->a_vars), sys->a_var_num, array_list(inds), len, sys->a_encs);
+          bdd = makeSet(get_mgr(sys), array_list(sys->mgr->a_vars), sys->mgr->a_var_num, array_list(inds), len, sys->mgr->a_encs);
      else
      {
           array_free(inds);
