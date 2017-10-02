@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<math.h>
 #include<stdint.h>
+#include<string.h>
 #include "mex.h"
 #include "cudd.h"
 #include "DynArray.h"
@@ -19,7 +20,11 @@ BDDCont* make_simple_cont(Manager* manager, DdNode* set, DdNode* input, char* fr
     cont.input = input;
     cont.type = SIMPLE;
     cont.mem_var = 1;
-    cont.from = from;
+    int len = strlen(from);
+    cont.from = mxMalloc(sizeof(char)*len);
+    mexMakeMemoryPersistent(cont.from);
+    for (int i = 0; i < len; i++)
+        cont.from[i] = from[i];
     mgr_incr(manager);
 
     BDDCont* ptr = mxMalloc(sizeof(BDDCont));
@@ -42,7 +47,11 @@ BDDCont* make_reach_cont(Manager* manager, BDDlist* sets, BDDContList* subconts,
     cont.input = NULL;
     cont.type = REACH;
     cont.mem_var = 1;
-    cont.from = from;
+    int len = strlen(from);
+    cont.from = mxMalloc(sizeof(char)*len);
+    mexMakeMemoryPersistent(cont.from);
+    for (int i = 0; i < len; i++)
+        cont.from[i] = from[i];
 
     BDDCont* ptr = mxMalloc(sizeof(BDDCont));
     *ptr = cont;
@@ -64,12 +73,44 @@ BDDCont* make_recurrence_cont(Manager* manager, BDDlist* sets, BDDContList* subc
     cont.input = NULL;
     cont.type = RECURRENCE;
     cont.mem_var = 1;
-    cont.from = from;
+    int len = strlen(from);
+    cont.from = mxMalloc(sizeof(char)*len);
+    mexMakeMemoryPersistent(cont.from);
+    for (int i = 0; i < len; i++)
+        cont.from[i] = from[i];
 
     BDDCont* ptr = mxMalloc(sizeof(BDDCont));
     *ptr = cont;
     mexMakeMemoryPersistent(ptr);
     return ptr;
+}
+
+void cont_restrict(BDDCont* cont, DdNode* set)
+{
+    if (cont->type == SIMPLE)
+    {
+        DdManager* manager = get_mgr(cont);
+        DdNode* cont_set = array_get(cont->sets, 0);
+        DdNode* tmp = Cudd_bddAnd(manager, cont_set, set);
+        Cudd_Ref(tmp);
+        Cudd_RecursiveDeref(manager, cont_set);
+        array_set(cont->sets, 0, tmp);
+        tmp = Cudd_bddAnd(manager, cont->input, set);
+        Cudd_Ref(tmp);
+        Cudd_RecursiveDeref(manager, cont->input);
+        cont->input = tmp;
+    }
+    else
+        mexErrMsgIdAndTxt("mexBDD:ControllerRestriction", "Complex controller cant be restricted");
+}
+
+void cont_set_from(BDDCont* cont, char* from)
+{
+    int len = strlen(from);
+    cont->from = mxRealloc(cont->from, sizeof(char)*len);
+    mexMakeMemoryPersistent(cont->from);
+    for (int i = 0; i < len; i++)
+        cont->from[i] = from[i];
 }
 
 void free_manager(Manager* mgr)

@@ -149,6 +149,7 @@ while true
     disp('Candidates not equal!');
     if eq(Win, s_Win)
       disp('But winning sets are!');
+      break;
     end
   end
   iter = iter + 1;

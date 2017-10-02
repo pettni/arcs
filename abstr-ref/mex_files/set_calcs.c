@@ -6,6 +6,7 @@
 #include "mex.h"
 #include "cudd.h"
 #include "system_types.h"
+#include "set_calcs.h"
 
 #define deref(system) Cudd_RecursiveDeref(get_mgr(sys), system);
 
@@ -13,133 +14,14 @@
 #define WIN_CANDIDATE_SET 2
 #define WIN_CANDIDATE_CONT 3
 
-DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,  char quant, int mode);
-DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* Z, DdNode* B,
-                          DdNode** C, int C_num, char quant, int mode);
 
-
-
-//  uint fromBitArray_int_i(int* arr, uint len)
-//  {
-//       uint val = 0;
-//       for (int i = len-1; i >= 0; i--)
-//       {
-//            val = (val << 1) | arr[i];
-//       }
-//       return val;
-//  }
-//
-//  void read_in_i(NumList** intervals, uint interv_num, NumList* cube_inds, int* cube, uint cube_pos, uint** outputs, uint* output_num)
-//  {
-//       if (cube_pos >= array_len(cube_inds))
-//      {
-//           // read action, in_state, out_state
-//           for (int i = 0; i < interv_num; i++)
-//           {
-//                NumList* interv = intervals[i];
-//                array_init(interval_cube, NumList, array_len(interv), 1);
-//                for (int j = 0; j < array_len(interv); j++)
-//                {
-//                     array_set(interval_cube, j, cube[array_get(interv, j)]);
-//                }
-//                outputs[i][*output_num] = fromBitArray_int_i(array_list(interval_cube), array_len(interval_cube));
-//                array_free(interval_cube);
-//           }
-//           (*output_num)++;
-//           return;
-//      }
-//
-//      uint index = array_get(cube_inds, cube_pos);
-//
-//      if (cube[index] == 2)
-//      {
-//           cube[index] = 1;
-//           read_in_i(intervals, interv_num, cube_inds, cube, cube_pos+1, outputs, output_num);
-//           cube[index] = 0;
-//           read_in_i(intervals, interv_num, cube_inds, cube, cube_pos+1, outputs, output_num);
-//           cube[index] = 2;
-//      }
-//      else
-//           read_in_i(intervals, interv_num, cube_inds, cube, cube_pos+1, outputs, output_num);
-// }
-//
-//  uint** read_in_states_i(BDDSys* sys, DdNode* T)
-//  {
-//       uint max_trans_num = array_len(sys->s_encs);
-//      uint state_num = 0;
-//
-//      uint* in_states = mxMalloc(sizeof(uint)*max_trans_num);
-//      uint** outputs = mxMalloc(sizeof(uint*)*2);
-//      outputs[0] = &state_num;
-//      outputs[1] = in_states;
-//
-//      DdGen* gen;
-//      int* cube;
-//      CUDD_VALUE_TYPE value;
-//      Cudd_ForeachCube(sys->manager, T, gen, cube, value)
-//      {
-//           read_in_i(&sys->s_in_inds, 1, sys->s_in_inds, cube, 0, &(outputs[1]), &state_num);
-//      }
-//      // convert keys to state
-//      for (int i = 0; i < state_num; i++)
-//           outputs[1][i] = array_get(sys->enc_state_map, outputs[1][i]);
-//
-//      return outputs;
-//  }
-//
-//  uint** read_out_states_i(BDDSys* sys, DdNode* T)
-//  {
-//       uint max_state_num = array_len(sys->s_encs);
-//      uint state_num = 0;
-//
-//      uint* out_states = mxMalloc(sizeof(uint)*max_state_num);
-//      uint** outputs = mxMalloc(sizeof(uint*)*2);
-//      outputs[0] = &state_num;
-//      outputs[1] = out_states;
-//
-//      DdGen* gen;
-//      int* cube;
-//      CUDD_VALUE_TYPE value;
-//      Cudd_ForeachCube(sys->manager, T, gen, cube, value)
-//      {
-//           read_in_i(&sys->s_out_inds, 1, sys->s_out_inds, cube, 0, &(outputs[1]), &state_num);
-//      }
-//      // convert keys to state
-//      for (int i = 0; i < state_num; i++)
-//           outputs[1][i] = array_get(sys->enc_state_map, outputs[1][i]);
-//
-//      return outputs;
-//  }
-//
-//  uint** read_actions_i(BDDSys* sys, DdNode* T)
-//  {
-//       uint max_trans_num = array_len(sys->a_encs);
-//      uint action_num = 0;
-//
-//      uint* a_states = mxMalloc(sizeof(uint)*max_trans_num);
-//      uint** outputs = mxMalloc(sizeof(uint*)*2);
-//      outputs[0] = &action_num;
-//      outputs[1] = a_states;
-//
-//      DdGen* gen;
-//      int* cube;
-//      CUDD_VALUE_TYPE value;
-//      int cube_count = 0;
-//      Cudd_ForeachCube(sys->manager, T, gen, cube, value)
-//      {
-//           read_in_i(&sys->a_inds, 1, sys->a_inds, cube, 0, &a_states, &action_num);
-//      }
-//
-//      return outputs;
-//  }
-
-
-DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
+OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int mode)
 {
     DdManager* manager = get_mgr(sys);
     DdNode* T = sys->trans_sys;
     DdNode* valid_transitions;
     DdNode* tmp;
+    DdNode* cont_set;
 
     DdNode* outCube = Cudd_bddComputeCube(manager, array_list(sys->mgr->s_out_vars), NULL, sys->mgr->s_var_num);
     Cudd_Ref(outCube);
@@ -162,6 +44,11 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
         valid_transitions = tmp;
         tmp = Cudd_bddExistAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
+        if (mode >= WIN_CANDIDATE_CONT)
+        {
+            cont_set = Cudd_bddAnd(manager, valid_transitions, tmp);
+            Cudd_Ref(cont_set);
+        }
         Cudd_RecursiveDeref(manager, valid_transitions);
         valid_transitions = tmp;
     }
@@ -180,6 +67,15 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
 
         tmp = Cudd_bddAndAbstract(manager, valid_transitions, A, aCube);
         Cudd_Ref(tmp);
+        if (mode >= WIN_CANDIDATE_CONT)
+        {
+            cont_set = Cudd_bddAnd(manager, valid_transitions, A);
+            Cudd_Ref(cont_set);
+            DdNode* tmp2 = Cudd_bddAnd(manager, cont_set, tmp);
+            Cudd_Ref(tmp2);
+            deref(cont_set);
+            cont_set = tmp2;
+        }
         deref(valid_transitions);
         valid_transitions = tmp;
     }
@@ -203,6 +99,11 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
 
         tmp = Cudd_bddUnivAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
+        if (mode >= WIN_CANDIDATE_CONT)
+        {
+            cont_set = Cudd_bddAnd(manager, valid_transitions, tmp);
+            Cudd_Ref(cont_set);
+        }
         deref(valid_transitions);
         valid_transitions = tmp;
     }
@@ -219,23 +120,38 @@ DdNode* pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2)
 
         tmp = Cudd_bddUnivAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
+        if (mode >= WIN_CANDIDATE_CONT)
+        {
+            cont_set = Cudd_bddAnd(manager, valid_transitions, tmp);
+            Cudd_Ref(cont_set);
+        }
         Cudd_RecursiveDeref(manager, valid_transitions);
         valid_transitions = tmp;
     }
     else
     {
-        printf("Invalid quantifiers! %c %c\n", quant1, quant2);
-        return NULL;
+        char message[200];
+        sprintf(message, "Invalid quantifiers! %c %c\n", quant1, quant2);
+        mexErrMsgIdAndTxt("mexBDD:PreSetCalc", message);
+    }
+
+    OutS out;
+    out.mode = mode;
+    if (mode >= WIN_SET)
+    {
+        out.win_set = valid_transitions;
+        if (mode >= WIN_CANDIDATE_CONT)
+            out.cont = make_simple_cont(sys->mgr, valid_transitions, cont_set, "pre");
     }
 
     Cudd_RecursiveDeref(manager, outCube);
     Cudd_RecursiveDeref(manager, aCube);
 
-    return valid_transitions;
+    return out;
 }
 
-DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
-            char quant, int mode)
+OutS inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
+         char quant, int mode)
 {
     DdManager* manager = get_mgr(sys);
     // calculate Y_0 = (G & B) \ Z
@@ -247,8 +163,10 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
     deref(Y);
     Y = tmp;
     DdNode* Cw = NULL;
+    DdNode* cont_set = NULL;
 
-    DdNode* quick_test = pre(sys, Z, U, quant, 'e');
+    OutS in = pre(sys, Z, U, quant, 'e', WIN_SET);
+    DdNode* quick_test = in.win_set;
     tmp = Cudd_bddSwapVariables(manager, quick_test, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
     Cudd_Ref(tmp);
     deref(quick_test);
@@ -269,13 +187,27 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
         {
             Cw = Cudd_ReadLogicZero(manager);
             Cudd_Ref(Cw);
+            if (mode >= WIN_CANDIDATE_CONT)
+            {
+                cont_set = Cudd_ReadLogicZero(manager);
+                Cudd_Ref(cont_set);
+            }
         }
-        DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
+        OutS out;
+        out.mode = mode;
         if (mode >= WIN_SET)
         {
-            out[0] = Y;
+            out.win_set = Y;
             if (mode >= WIN_CANDIDATE_SET)
-                out[1] = Cw;
+            {
+                out.cand_set = Cw;
+                if (mode >= WIN_CANDIDATE_CONT)
+                {
+                    DdNode* extra_zero = Cudd_ReadLogicZero(manager);
+                    Cudd_Ref(extra_zero);
+                    out.cont = make_simple_cont(sys->mgr, cont_set, extra_zero, "pginv");
+                }
+            }
         }
 
         return out;
@@ -300,7 +232,8 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
 
         tmp = Cudd_bddOr(manager, old_Y, Z);
         Cudd_Ref(tmp);
-        DdNode* pre_set = pre(sys, tmp, U, quant, 'a');
+        OutS pre_set_in = pre(sys, tmp, U, quant, 'a', WIN_SET);
+        DdNode* pre_set = pre_set_in.win_set;
         deref(tmp);
 
         tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
@@ -313,18 +246,33 @@ DdNode** inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
     }
     deref(old_Y);
 
-    DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
+    OutS out;
+    out.mode = mode;
     if (mode >= WIN_SET)
     {
-        out[0] = Y;
+        out.win_set = Y;
         if (mode >= WIN_CANDIDATE_SET)
-            out[1] = Cw;
+        {
+            out.cand_set = Cw;
+            if (mode >= WIN_CANDIDATE_CONT)
+            {
+                tmp = Cudd_bddAnd(manager, Y, Z);
+                Cudd_Ref(tmp);
+                in = pre(sys, tmp, U, quant, 'a', mode);
+                out.cont = in.cont;
+                cont_restrict(out.cont, Y);
+                cont_set_from(out.cont, "pginv");
+                deref(in.win_set);
+                deref(in.cand_set);
+                deref(tmp);
+            }
+        }
     }
 
     return out;
 }
 
-DdNode** PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
+OutS PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
 {
     DdManager* manager = get_mgr(sys);
     DdNode* U;
@@ -334,11 +282,28 @@ DdNode** PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
     DdNode* inv_set;
     DdNode* tmp;
     DdNode* Cw;
+    BDDContList* cont_list;
+    BDDlist* set_list;
+
     if (mode >= WIN_CANDIDATE_SET)
     {
         Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
+        if (mode >= WIN_CANDIDATE_CONT)
+        {
+            array_init(list, BDDContList, 0, 10);
+            array_init(list2, BDDlist, 0, 10);
+            cont_list = list;
+            set_list = list2;
+            DdNode* tmp_zero = Cudd_ReadLogicZero(manager);
+            BDDCont* first_cont = make_simple_cont(sys->mgr, Z, tmp_zero, "");
+            array_pushback(cont_list, first_cont);
+            DdNode* Z_copy = Cudd_bddAnd(manager, Z, Cudd_ReadOne(manager));
+            Cudd_Ref(Z_copy);
+            array_pushback(set_list, Z_copy);
+        }
     }
+
     for (int i = 0; i < array_len(sys->pg_U); i++)
     {
         if (array_get(sys->pg_U, i) == NULL)
@@ -351,37 +316,48 @@ DdNode** PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
 
         U = array_get(sys->pg_U, i);
         G = array_get(sys->pg_G, i);
-        DdNode** in = inv(sys, PG_set, B, U, G, quant, mode);
+        OutS in = inv(sys, PG_set, B, U, G, quant, mode);
         if (mode >= WIN_SET)
         {
-            inv_set = in[0];
+            inv_set = in.win_set;
             if (mode >= WIN_CANDIDATE_SET)
             {
                 deref(Cw);
-                Cw = in[1];
+                Cw = in.cand_set;
+                if (mode >= WIN_CANDIDATE_CONT)
+                {
+                    array_pushback(set_list, inv_set);
+                    array_pushback(cont_list, in.cont);
+                }
             }
         }
-        mxFree(in);
         tmp = Cudd_bddOr(manager, inv_set, PG_set);
         Cudd_Ref(tmp);
-        deref(inv_set);
+        if (mode != WIN_CANDIDATE_CONT)
+            deref(inv_set);
         deref(PG_set);
         PG_set = tmp;
     }
 
-    DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
-
+    OutS out;
+    out.mode = mode;
     if (mode >= WIN_SET)
     {
-        out[0] = PG_set;
+        out.win_set = PG_set;
         if (mode >= WIN_CANDIDATE_SET)
-            out[1] = Cw;
+        {
+            out.cand_set = Cw;
+            if (mode >= WIN_CANDIDATE_CONT)
+            {
+                out.cont = make_reach_cont(sys->mgr, set_list, cont_list, "pre_pg");
+            }
+        }
     }
 
     return out;
 }
 
-DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
+OutS win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
 {
     DdManager* manager = get_mgr(sys);
     // calculates Win_q,a(B U Z)
@@ -389,10 +365,19 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
     DdNode* pre_set;
     DdNode* tmp;
     DdNode* Cw;
+    BDDContList* cont_list;
+    BDDlist* set_list;
     if (mode >= WIN_CANDIDATE_SET)
     {
         Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
+        if (mode >= WIN_CANDIDATE_CONT)
+        {
+            array_init(list, BDDContList, 0, 10);
+            array_init(list2, BDDlist, 0, 10);
+            cont_list = list;
+            set_list = list2;
+        }
     }
     DdNode* one = Cudd_ReadOne(manager);
     Cudd_Ref(one);
@@ -402,21 +387,12 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
     Cudd_Ref(old_X);
     while(!Cudd_EquivDC(manager, X, old_X, Cudd_ReadLogicZero(manager)))
     {
+        int dispose_PG = 1;
         deref(old_X);
         old_X = X;
-        DdNode** in = PGpre(sys, X, B, quant, mode);
-        if (mode >= WIN_SET)
-        {
-            PGpre_set = in[0];
-            if (mode >= WIN_CANDIDATE_SET)
-            {
-                deref(Cw);
-                Cw = in[1];
-            }
-        }
-        mxFree(in);
-        pre_set = pre(sys, X, one, quant, 'a');
 
+        OutS pre_in = pre(sys, X, one, quant, 'a', WIN_SET);
+        pre_set = pre_in.win_set;
         tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
@@ -424,22 +400,52 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
         tmp = Cudd_bddAnd(manager, B, pre_set);
         Cudd_Ref(tmp);
         X = tmp;
-        tmp = Cudd_bddOr(manager, PGpre_set, X);
-        Cudd_Ref(tmp);
-        deref(X);
-        X = tmp;
         tmp = Cudd_bddOr(manager, Z, X);
         Cudd_Ref(tmp);
         deref(X);
         X = tmp;
 
-        deref(PGpre_set);
-        deref(pre_set);
+        OutS in;
+        if (mode == WIN_SET)
+        {
+            in = PGpre(sys, old_X, B, quant, mode);
+            PGpre_set = in.win_set;
+        }
+        else if (mode >= WIN_CANDIDATE_SET)
+        {
+            in = PGpre(sys, X, B, quant, mode);
+            PGpre_set = in.win_set;
+            deref(Cw);
+            Cw = in.cand_set;
+            if (mode >= WIN_CANDIDATE_CONT)
+            {
+                array_pushback(set_list, pre_set)
+                array_pushback(cont_list, pre_in.cont);
+
+                tmp = Cudd_bddAnd(manager, PGpre_set, Cudd_Not(X));
+                Cudd_Ref(tmp);
+                if (!Cudd_EquivDC(manager, tmp, Cudd_ReadLogicZero(manager), Cudd_ReadLogicZero(manager)))
+                {
+                    array_pushback(set_list, PGpre_set);
+                    array_pushback(cont_list, in.cont);
+                    dispose_PG = 0;
+                }
+            }
+        }
+        tmp = Cudd_bddOr(manager, PGpre_set, X);
+        Cudd_Ref(tmp);
+        deref(X);
+        X = tmp;
+        if (mode != WIN_CANDIDATE_CONT)
+            deref(pre_set);
+        if (dispose_PG)
+            deref(PGpre_set);
     }
 
     if (mode >= WIN_CANDIDATE_SET)
     {
-        DdNode* XPre = pre(sys, X, one, quant, 'a');
+        OutS pre_in = pre(sys, X, one, quant, 'a', WIN_SET);
+        DdNode* XPre = pre_in.win_set;
         tmp = Cudd_bddSwapVariables(manager, XPre, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(XPre);
@@ -458,17 +464,22 @@ DdNode** win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
     deref(one);
     deref(old_X);
 
-    DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
+    OutS out;
+    out.mode = mode;
     if (mode >= WIN_SET)
     {
-        out[0] = X;
+        out.win_set = X;
         if (mode >= WIN_CANDIDATE_SET)
-            out[1] = Cw;
+        {
+            out.cand_set = Cw;
+            if (mode >= WIN_CANDIDATE_CONT)
+                out.cont = make_reach_cont(sys->mgr, set_list, cont_list, "win_until");
+        }
     }
     return out;
 }
 
-DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char quant, int mode)
+OutS win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char quant, int mode)
 {
     DdManager* manager = get_mgr(sys);
     DdNode* always_A = Cudd_ReadOne(manager);
@@ -477,6 +488,7 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
     DdNode* B_always;
     DdNode* Z_always;
     DdNode* Cw;
+    BDDCont* cont;
     if (mode >= WIN_CANDIDATE_SET)
     {
         Cw = Cudd_ReadLogicZero(manager);
@@ -492,19 +504,19 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
         Cudd_Ref(one);
         deref(always_A);
 
-        DdNode** in = win_intermediate(sys, sys->all_states, A, zero, &one, 1, quant, mode);
+        int interm_mode = mode < WIN_CANDIDATE_SET ? mode : WIN_CANDIDATE_SET;
+        OutS in = win_intermediate(sys, sys->all_states, A, zero, &one, 1, quant, interm_mode);
         Cudd_RecursiveDeref(manager, zero);
         Cudd_RecursiveDeref(manager, one);
         if (mode >= WIN_SET)
         {
-            always_A = in[0];
+            always_A = in.win_set;
             if (mode >= WIN_CANDIDATE_SET)
             {
                 deref(Cw);
-                Cw = in[1];
+                Cw = in.cand_set;
             }
         }
-        mxFree(in);
     }
 
     B_always = Cudd_bddAnd(manager, always_A, B);
@@ -513,34 +525,43 @@ DdNode** win_until_and_always(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z, char
     Cudd_Ref(Z_always);
     deref(always_A);
 
-    DdNode** in = win_until(sys, Z_always, B_always, quant, mode);
+    OutS in = win_until(sys, Z_always, B_always, quant, mode);
     Cudd_RecursiveDeref(manager, B_always);
     Cudd_RecursiveDeref(manager, Z_always);
     if (mode >= WIN_SET)
     {
-        win_until_set = in[0];
+        win_until_set = in.win_set;
         if (mode >= WIN_CANDIDATE_SET)
         {
-            tmp = Cudd_bddOr(manager, Cw, in[1]);
+            tmp = Cudd_bddOr(manager, Cw, in.cand_set);
             Cudd_Ref(tmp);
             deref(Cw);
-            deref(in[1]);
+            deref(in.cand_set);
             Cw = tmp;
+            if (mode >= WIN_CANDIDATE_CONT)
+            {
+                cont = in.cont;
+                cont_set_from(cont, "win_until_and_always");
+            }
         }
     }
-    mxFree(in);
 
-    DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
+    OutS out;
+    out.mode = mode;
     if (mode >= WIN_SET)
     {
-        out[0] = win_until_set;
+        out.win_set = win_until_set;
         if (mode >= WIN_CANDIDATE_SET)
-            out[1] = Cw;
+        {
+            out.cand_set = Cw;
+            if (mode >= WIN_CANDIDATE_CONT)
+                out.cont = cont;
+        }
     }
     return out;
 }
 
-DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
+OutS win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
                          DdNode** C, int C_num, char quant, int mode)
 {
     DdManager* manager = get_mgr(sys);
@@ -553,10 +574,16 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
     Cudd_Ref(one);
     DdNode* win_until_set;
     DdNode* Cw;
+    BDDContList* cont_list;
     if (mode >= WIN_CANDIDATE_SET)
     {
         Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
+        if (mode >= WIN_CANDIDATE_CONT)
+        {
+            array_init(list, BDDContList, 0, 10);
+            cont_list = list;
+        }
     }
     DdNode* W_1;
 
@@ -569,7 +596,8 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
     {
         deref(old_W);
         old_W = W;
-        pre_set = pre(sys, W, one, quant, 'a');
+        OutS pre_set_in = pre(sys, W, one, quant, 'a', WIN_SET);
+        pre_set = pre_set_in.win_set;
         tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
@@ -589,20 +617,25 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
             deref(Z_iter[i]);
             Z_iter[i] = tmp;
 
-            DdNode** in = win_until_and_always(sys, A, B, Z_iter[i], quant, first_set ? mode : WIN_SET);
+            OutS in = win_until_and_always(sys, A, B, Z_iter[i], quant, mode);
             if (mode >= WIN_SET)
             {
-                win_until_set = in[0];
+                win_until_set = in.win_set;
                 if (first_set && mode >= WIN_CANDIDATE_SET)
                 {
-                    tmp = Cudd_bddOr(manager, Cw, in[1]);
+                    tmp = Cudd_bddOr(manager, Cw, in.cand_set);
                     Cudd_Ref(tmp);
                     deref(Cw);
-                    deref(in[1]);
+                    deref(in.cand_set);
                     Cw = tmp;
                 }
+                else if (mode >= WIN_CANDIDATE_SET)
+                {
+                    deref(in.cand_set);
+                }
+                if (mode >= WIN_CANDIDATE_CONT)
+                    array_pushback(cont_list, in.cont);
             }
-            mxFree(in);
             tmp = Cudd_bddAnd(manager, W, win_until_set);
             Cudd_Ref(tmp);
             if (i > 0)
@@ -625,10 +658,11 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
     deref(one);
     deref(old_W);
 
-    DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
+    OutS out;
+    out.mode = mode;
     if (mode >= WIN_SET)
     {
-        out[0] = W;
+        out.win_set = W;
         if (mode >= WIN_CANDIDATE_SET)
         {
             DdNode* W_set = Cudd_bddAnd(manager, W_1, Cudd_Not(W));
@@ -639,14 +673,28 @@ DdNode** win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
             deref(Cw);
             deref(W_set);
             Cw = tmp;
-            out[1] = Cw;
+            out.cand_set = Cw;
+            if (mode >= WIN_CANDIDATE_CONT)
+            {
+                array_init(set_list, BDDlist, C_num+1, 1);
+                DdNode* W_copy = Cudd_bddAnd(manager, W, Cudd_ReadOne(manager));
+                Cudd_Ref(W_copy);
+                array_set(set_list, 0, W_copy);
+                for (int i = 0; i < C_num; i++)
+                {
+                    tmp = Cudd_bddAnd(manager, C[i], B);
+                    Cudd_Ref(tmp);
+                    array_set(set_list, i+1, tmp);
+                }
+                out.cont = make_recurrence_cont(sys->mgr, set_list, cont_list, "win_intermediate");
+            }
         }
     }
 
     return out;
 }
 
-DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
+OutS win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
                    char quant1, char quant2, DdNode* head_start, int mode)
 {
     DdManager* manager = get_mgr(sys);
@@ -682,10 +730,19 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
     DdNode* Z;
     DdNode* tmp;
     DdNode* Cw;
+    BDDContList* cont_list;
+    BDDlist* set_list;
     if (mode >= WIN_CANDIDATE_SET)
     {
         Cw = Cudd_ReadLogicZero(manager);
         Cudd_Ref(Cw);
+        if (mode >= WIN_CANDIDATE_CONT)
+        {
+            array_init(list, BDDContList, 0, 10);
+            array_init(list2, BDDlist, 0, 10);
+            cont_list = list;
+            set_list = list2;
+        }
     }
 
     if (Cudd_EquivDC(manager, A, Cudd_ReadLogicZero(manager), Cudd_ReadLogicZero(manager)))
@@ -693,42 +750,58 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
     if (Cudd_EquivDC(manager, B, Cudd_ReadLogicZero(manager), Cudd_ReadLogicZero(manager)))
          B = one;
     int first_set = 1;
+    int remove_old = 1;
     while (!Cudd_EquivDC(manager, V, old_V, Cudd_ReadLogicZero(manager)))
     {
-        deref(old_V);
+        if (mode < WIN_CANDIDATE_CONT)
+        {
+            deref(old_V);
+        }
+        else
+            remove_old = 0;
         old_V = V;
-        pre_set = pre(sys, V, one, quant1, 'a');
+        OutS pre_set_in = pre(sys, V, one, quant1, 'a', WIN_SET);
+        pre_set = pre_set_in.win_set;
         tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
         pre_set = tmp;
-        DdNode** PGpre_in = PGpre(sys, V, A, quant1, WIN_SET);
-        pg_pre_set = PGpre_in[0];
-        mxFree(PGpre_in);
+        OutS PGpre_in = PGpre(sys, V, A, quant1, WIN_SET);
+        pg_pre_set = PGpre_in.win_set;
         Z = Cudd_bddOr(manager, pre_set, pg_pre_set);
         Cudd_Ref(Z);
         deref(pre_set);
         deref(pg_pre_set);
 
-        DdNode** in = win_intermediate(sys, A, B, Z, C, C_num, quant1, first_set ? mode : WIN_SET);
+        OutS in = win_intermediate(sys, A, B, Z, C, C_num, quant1, mode);
         if (mode >= WIN_SET)
         {
-            V = in[0];
+            V = in.win_set;
             if (first_set && mode >= WIN_CANDIDATE_SET)
             {
                 deref(Cw);
-                Cw = in[1];
+                Cw = in.cand_set;
                 first_set = 0;
+            }
+            else if (mode >= WIN_CANDIDATE_SET)
+            {
+                deref(in.cand_set);
+            }
+            if (mode >= WIN_CANDIDATE_CONT)
+            {
+                array_pushback(set_list, V);
+                array_pushback(cont_list, in.cont);
             }
         }
         deref(Z);
-        mxFree(in);
     }
-    deref(old_V);
+    if (remove_old)
+        deref(old_V);
 
     if (mode >= WIN_CANDIDATE_SET)
     {
-        pre_set = pre(sys, V, one, quant1, 'e');
+        OutS in = pre(sys, V, one, quant1, 'e', WIN_SET);
+        pre_set = in.win_set;
         tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_out_vars), array_list(sys->mgr->s_in_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
         deref(pre_set);
@@ -744,12 +817,17 @@ DdNode** win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
     }
     deref(one);
 
-    DdNode** out = mxMalloc(sizeof(DdNode*)*mode);
+    OutS out;
+    out.mode = mode;
     if (mode >= WIN_SET)
     {
-        out[0] = V;
+        out.win_set = V;
         if (mode >= WIN_CANDIDATE_SET)
-            out[1] = Cw;
+        {
+            out.cand_set = Cw;
+            if (mode >= WIN_CANDIDATE_CONT)
+                out.cont = make_reach_cont(sys->mgr, set_list, cont_list, "win_primal");
+        }
     }
 
     if (C_created)

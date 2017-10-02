@@ -31,6 +31,8 @@ typedef enum {SIMPLE, REACH, RECURRENCE} cont_type;
 BDDCont* make_simple_cont(Manager* manager, DdNode* set, DdNode* input, char* from);
 BDDCont* make_reach_cont(Manager* manager, BDDlist* sets, BDDContList* subconts, char* from);
 BDDCont* make_recurrence_cont(Manager* manager, BDDlist* sets, BDDContList* subconts, char* from);
+void cont_restrict(BDDCont* cont, DdNode* set);
+void cont_set_from(BDDCont* cont, char* from);
 void free_manager(Manager* mgr);
 void mgr_decr(Manager* mgr);
 void mgr_incr(Manager* mgr);
@@ -64,6 +66,8 @@ struct BDDSystem {
 struct BDDController
 {
      Manager*     mgr;
+     uint         ID;
+
      BDDlist*     sets; // free
      BDDContList* subconts; // free
      DdNode*      input;
