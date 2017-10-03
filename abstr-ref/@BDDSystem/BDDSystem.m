@@ -173,15 +173,17 @@ classdef BDDSystem < handle
       if nargout == 1
         V = mexBDD('pre', sys.BDD_system_ID, X, U, quant1, quant2);
       elseif nargout == 2
-        [V, cont] = mexBDD('pre', sys.BDD_system_ID, X, U, quant1, quant2);
+        [V, contID] = mexBDD('pre', sys.BDD_system_ID, X, U, quant1, quant2);
+        cont = Controller.fromBDD(contID);
       end
       V = sort(V);
     end
     
     function [W, Cw, cont] = pre_pg(sys, V, B, quant1)
       if nargout == 3
-        [W, Cw, cont] = mexBDD('pre_pg', sys.BDD_system_ID, V, B, quant1);
+        [W, Cw, contID] = mexBDD('pre_pg', sys.BDD_system_ID, V, B, quant1);
         Cw = sort(Cw);
+        cont = Controller.fromBDD(contID);
       elseif nargout == 2
         [W, Cw] = mexBDD('pre_pg', sys.BDD_system_ID, V, B, quant1);
         Cw = sort(Cw);
@@ -198,8 +200,9 @@ classdef BDDSystem < handle
         [W, Cw] = mexBDD('pg_inv', sys.BDD_system_ID, U, G, Z, B, quant1);
         Cw = sort(Cw);
       elseif nargout == 3
-        [W, Cw, cont] = mexBDD('pg_inv', sys.BDD_system_ID, U, G, Z, B, quant1);
+        [W, Cw, contID] = mexBDD('pg_inv', sys.BDD_system_ID, U, G, Z, B, quant1);
         Cw = sort(Cw);
+        cont = Controller.fromBDD(contID);
       end
       W = sort(W);
     end
@@ -211,8 +214,9 @@ classdef BDDSystem < handle
         [V, Cv] = mexBDD('win_until', sys.BDD_system_ID, B, P, quant1);
         Cv = sort(Cv);
       elseif nargout == 3
-        [V, Cv, cont] = mexBDD('win_until', sys.BDD_system_ID, B, P, quant1);
+        [V, Cv, contID] = mexBDD('win_until', sys.BDD_system_ID, B, P, quant1);
         Cv = sort(Cv);
+        cont = Controller.fromBDD(contID);
       end
       V = sort(V);
     end
@@ -224,8 +228,9 @@ classdef BDDSystem < handle
         [V, Cv] = mexBDD('win_until_and_always', sys.BDD_system_ID, A, B, P, quant1);
         Cv = sort(Cv);
       elseif nargout == 3
-        [V, Cv, cont] = mexBDD('win_until_and_always', sys.BDD_system_ID, A, B, P, quant1);
+        [V, Cv, contID] = mexBDD('win_until_and_always', sys.BDD_system_ID, A, B, P, quant1);
         Cv = sort(Cv);
+        cont = Controller.fromBDD(contID);
       end
       V = sort(V);
     end
@@ -237,8 +242,9 @@ classdef BDDSystem < handle
         [V, Cv] = mexBDD('win_intermediate', sys.BDD_system_ID, A, B, P, C_list, quant1);
         Cv = sort(Cv);
       elseif nargout == 3
-        [V, Cv, cont] = mexBDD('win_intermediate', sys.BDD_system_ID, A, B, P, C_list, quant1);
+        [V, Cv, contID] = mexBDD('win_intermediate', sys.BDD_system_ID, A, B, P, C_list, quant1);
         Cv = sort(Cv);
+        cont = Controller.fromBDD(contID);
       end
       V = sort(V);
     end
@@ -253,14 +259,11 @@ classdef BDDSystem < handle
         [V, Cv] = mexBDD('win_primal', sys.BDD_system_ID, A, B, C_list, quant1, quant2, V);
         Cv = sort(Cv);
       elseif nargout == 3
-        [V, Cv, cont] = mexBDD('win_primal', sys.BDD_system_ID, A, B, C_list, quant1, quant2, V);
+        [V, Cv, contID] = mexBDD('win_primal', sys.BDD_system_ID, A, B, C_list, quant1, quant2, V);
         Cv = sort(Cv);
+        cont = Controller.fromBDD(contID);
       end
       V = sort(V);
-    end
-    
-    function print_map(sys)
-      mexBDD('print_enc_map', sys.BDD_system_ID);
     end
     
     function print_states(sys)

@@ -10,7 +10,7 @@ system_setting = TransSyst.bdd_set;
 encoding_setting = BDDSystem.split_enc;
 
 % max # of synthesis-refinement steps
-maxiter = 10000;
+maxiter = 2000;
 
 % split final invariant set further to avoid zeno
 split_inv = true;
@@ -77,13 +77,13 @@ part.search_trans_reg(pg_depth);
 
 Win = [];
 iter = 0;
-max_time = 0.5*3600;
+max_time = 2*3600;
 data = zeros(0, 4);
 elapsed_time = 0;
-part.ts.bdd_sys.dyn_reordering(true);
+part.ts.bdd_sys.dyn_reordering(false);
 split_time = 0;
 prime_time = 0;
-%load('part.mat');
+load('part.mat');
 while true
   
   time = toc;
@@ -125,7 +125,7 @@ while true
   part.ts.bdd_sys.read_var_order();
 end
 
-save('split_new_old_no_reorder_data.mat', 'data');
+save('test1.mat', 'data');
 % Split final set to eliminate Zeno
 % if split_inv
 %   inv_set = part.ts.win_primal(part.get_cells_with_ap({'SET'}), ...

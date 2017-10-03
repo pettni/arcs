@@ -33,6 +33,8 @@ BDDCont* make_reach_cont(Manager* manager, BDDlist* sets, BDDContList* subconts,
 BDDCont* make_recurrence_cont(Manager* manager, BDDlist* sets, BDDContList* subconts, char* from);
 void cont_restrict(BDDCont* cont, DdNode* set);
 void cont_set_from(BDDCont* cont, char* from);
+DdNode* cont_get_input(BDDCont* cont, DdNode* states);
+DdNode* cont_get_simple_input(BDDCont* cont, DdNode* states);
 void free_manager(Manager* mgr);
 void mgr_decr(Manager* mgr);
 void mgr_incr(Manager* mgr);
@@ -66,13 +68,13 @@ struct BDDSystem {
 struct BDDController
 {
      Manager*     mgr;
-     uint         ID;
+     uint          ID;
 
      BDDlist*     sets; // free
      BDDContList* subconts; // free
      DdNode*      input;
      cont_type    type;
-     uint         mem_var;
+     int          mem_var;
      char*        from;
 };
 
