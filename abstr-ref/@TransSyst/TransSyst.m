@@ -43,7 +43,11 @@ classdef TransSyst<handle
     function ts = TransSyst(n_s, n_a, setting, encoding_setting)
       ts.n_s = uint32(n_s);
       ts.n_a = uint32(n_a);
-      ts.sys_setting = setting;
+      if nargin < 3
+        ts.sys_setting = TransSyst.sparse_set;
+      else
+        ts.sys_setting = setting;
+      end
       if nargin < 3 || strcmp(setting, TransSyst.sparse_set)
         % Create a sparse TransSyst with n_s states and n_a actions
         ts.state1 = uint32([]);

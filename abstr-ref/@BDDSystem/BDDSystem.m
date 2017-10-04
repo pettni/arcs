@@ -266,6 +266,13 @@ classdef BDDSystem < handle
       V = sort(V);
     end
     
+    function time = win_primal_time(sys, A, B, C_list, quant1, quant2, V)
+      if nargin < 7
+        V = [];
+      end
+      time = mexBDD('win_primal_time', sys.BDD_system_ID, A, B, C_list, quant1, quant2, V);
+    end
+    
     function print_states(sys)
       mexBDD('print_all_states', sys.BDD_system_ID);
     end
@@ -367,6 +374,7 @@ classdef BDDSystem < handle
       
       lobj = obj; 
       lobj.BDD_system_ID = mexBDD('load', s);
+      delete temp_sys.dump
     end
   end
 end

@@ -83,7 +83,7 @@ elapsed_time = 0;
 part.ts.bdd_sys.dyn_reordering(false);
 split_time = 0;
 prime_time = 0;
-load('part.mat');
+%load('part.mat');
 while true
   
   time = toc;

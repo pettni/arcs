@@ -44,7 +44,7 @@ OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int 
         valid_transitions = tmp;
         tmp = Cudd_bddExistAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
-        if (mode >= WIN_CANDIDATE_CONT-1)
+        if (mode >= WIN_CANDIDATE_CONT)
         {
             cont_set = Cudd_bddAnd(manager, valid_transitions, tmp);
             Cudd_Ref(cont_set);
@@ -67,7 +67,7 @@ OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int 
 
         tmp = Cudd_bddAndAbstract(manager, valid_transitions, A, aCube);
         Cudd_Ref(tmp);
-        if (mode >= WIN_CANDIDATE_CONT-1)
+        if (mode >= WIN_CANDIDATE_CONT)
         {
             cont_set = Cudd_bddAnd(manager, valid_transitions, A);
             Cudd_Ref(cont_set);
@@ -99,7 +99,7 @@ OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int 
 
         tmp = Cudd_bddUnivAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
-        if (mode >= WIN_CANDIDATE_CONT-1)
+        if (mode >= WIN_CANDIDATE_CONT)
         {
             cont_set = Cudd_bddAnd(manager, valid_transitions, tmp);
             Cudd_Ref(cont_set);
@@ -120,7 +120,7 @@ OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int 
 
         tmp = Cudd_bddUnivAbstract(manager, valid_transitions, aCube);
         Cudd_Ref(tmp);
-        if (mode >= WIN_CANDIDATE_CONT-1)
+        if (mode >= WIN_CANDIDATE_CONT)
         {
             cont_set = Cudd_bddAnd(manager, valid_transitions, tmp);
             Cudd_Ref(cont_set);
@@ -140,8 +140,10 @@ OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int 
     if (mode >= WIN_SET)
     {
         out.win_set = valid_transitions;
-        if (mode >= WIN_CANDIDATE_CONT-1)
+        if (mode >= WIN_CANDIDATE_CONT)
         {
+            mexPrintf("Controller created\n");
+            mexEvalString("drawnow;");
             Manager* mgr = sys->mgr;
             DdNode* transition_out = Cudd_bddSwapVariables(manager, valid_transitions,
                 array_list(mgr->s_in_vars), array_list(mgr->s_out_vars), mgr->s_var_num);
