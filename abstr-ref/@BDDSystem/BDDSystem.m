@@ -49,9 +49,6 @@ classdef BDDSystem < handle
       for i = 1:state_num
         enc = de2bi(i-1);
         enc = [enc, zeros(1, sys.s_var_num - length(enc))];
-        fprintf('s_encs=');
-        fprintf('%d', enc);
-        fprintf('\n');
         sys.state_encodings{i} = enc;
       end
       sys.a_var_num = ceil(log2(action_num));
@@ -68,7 +65,6 @@ classdef BDDSystem < handle
     end
     
     function delete(sys)
-      disp('Destroying object');
       mexBDD('delete', sys.BDD_system_ID);
     end
     
