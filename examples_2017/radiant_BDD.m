@@ -7,16 +7,16 @@ opt_settings.mode = 'sdsos';
 opt_settings.max_deg = 4;
 
 system_setting = TransSyst.bdd_set;
-encoding_setting = BDDSystem.split_enc;
+encoding_setting = BDDSystem.log_enc;
 
 % max # of synthesis-refinement steps
-maxiter = 2000;
-
-% split final invariant set further to avoid zeno
-split_inv = true;
+maxiter = 10000;
 
 % Target set
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
+
+% split final invariant set further to avoid zeno
+split_inv = true;
 
 % Disturbance: unit is W/m^2 --- heat added per unit floor area
 dmax = 0.;
@@ -32,26 +32,25 @@ pg_depth = 2;
 %%%%%%%%%%%%%%%%%%%%%%%
 
 % Load model
-cd 'radiant_data'
-  if strcmp(model, 'realistic')
-    [a1 k1 e1 a2 k2 e2] = radiant_dyn();
-  elseif strcmp(model, 'cdc2014')
-    load a1; load a2; load b1; load b2
-    b1(3) = b1(3)/10;
-    b2(3) = b2(3)/10;
-    k1 = b1;
-    k2 = b2;
-  else
-    error('invalid model')
-  end
-cd ..
+if strcmp(model, 'realistic')
+  [a1 k1 e1 a2 k2 e2] = radiant_dyn();
+elseif strcmp(model, 'cdc2014')
+  load a1; load a2; load b1; load b2
+  b1(3) = b1(3)/10;
+  b2(3) = b2(3)/10;
+  k1 = b1;
+  k2 = b2;
+else
+  error('invalid model')
+end
 
 tic
+
 
 % Build initial partition
 part = Partition(Rec([20 28; 20 28; 20 28]));
 part.add_area(goal_set);
-part.check();
+part.check();   % sanity check
 
 % Create abstraction
 xvar = sdpvar(3,1);
@@ -77,8 +76,8 @@ part.search_trans_reg(pg_depth);
 
 Win = [];
 iter = 0;
-max_time = 2*3600;
-data = zeros(0, 4);
+max_time = 3600;
+data = zeros(maxiter, 6);
 elapsed_time = 0;
 part.ts.bdd_sys.dyn_reordering(false);
 split_time = 0;
@@ -87,7 +86,7 @@ prime_time = 0;
 while true
   
   time = toc;
-  data(end+1, :) = [iter, time, length(part), sum(volume(part.cell_list(Win)))/volume(part.domain)];
+  data(end+1, :) = [iter, time, prime_time, split_time, length(part), sum(volume(part.cell_list(Win)))/volume(part.domain)];
   disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ' winning set volume: ', num2str(sum(volume(part.cell_list(Win)))/volume(part.domain))]);
   disp(['iter: ', num2str(iter), ', prime_time: ', num2str(prime_time), ' | split_time: ', num2str(split_time)]);
   % Solve <>[] 'SET'
@@ -122,10 +121,9 @@ while true
   split_time = toc - split_time;
   
   iter = iter + 1;
-  part.ts.bdd_sys.read_var_order();
 end
 
-save('test1.mat', 'data');
+save('end_to_end_split.mat', 'data');
 % Split final set to eliminate Zeno
 % if split_inv
 %   inv_set = part.ts.win_primal(part.get_cells_with_ap({'SET'}), ...

@@ -23,10 +23,8 @@ OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int 
     DdNode* tmp;
     DdNode* cont_set;
 
-    DdNode* outCube = Cudd_bddComputeCube(manager, array_list(sys->mgr->s_out_vars), NULL, sys->mgr->s_var_num);
-    Cudd_Ref(outCube);
-    DdNode* aCube = Cudd_bddComputeCube(manager, array_list(sys->mgr->a_vars), NULL, sys->mgr->a_var_num);
-    Cudd_Ref(aCube);
+    DdNode* outCube = sys->mgr->s_out_cube;
+    DdNode* aCube = sys->mgr->a_cube;
 
     // Cudd_DebugCheck(sys->manager);
     if (quant1 == 'e' && quant2 == 'e')
@@ -142,8 +140,8 @@ OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int 
         out.win_set = valid_transitions;
         if (mode >= WIN_CANDIDATE_CONT)
         {
-            mexPrintf("Controller created\n");
-            mexEvalString("drawnow;");
+            //mexPrintf("Controller created\n");
+            //mexEvalString("drawnow;");
             Manager* mgr = sys->mgr;
             DdNode* transition_out = Cudd_bddSwapVariables(manager, valid_transitions,
                 array_list(mgr->s_in_vars), array_list(mgr->s_out_vars), mgr->s_var_num);
@@ -151,9 +149,6 @@ OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int 
             out.cont = make_simple_cont(mgr, transition_out, cont_set, "pre");
         }
     }
-
-    Cudd_RecursiveDeref(manager, outCube);
-    Cudd_RecursiveDeref(manager, aCube);
 
     return out;
 }
@@ -264,8 +259,8 @@ OutS inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
             out.cand_set = Cw;
             if (mode >= WIN_CANDIDATE_CONT)
             {
-                mexPrintf("Controller created\n");
-                mexEvalString("drawnow;");
+                //mexPrintf("Controller created\n");
+                //mexEvalString("drawnow;");
                 tmp = Cudd_bddOr(manager, Y, Z);
                 Cudd_Ref(tmp);
                 in = pre(sys, tmp, U, quant, 'a', mode);
@@ -323,7 +318,7 @@ OutS PGpre(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
             continue;
         if (quant == 'a' && !Cudd_EquivDC(manager, array_get(sys->pg_U, i), sys->all_actions, Cudd_Not(sys->all_actions)))
         {
-            mexPrintf("This happens! Progress group skipped\n");
+            //mexPrintf("This happens! Progress group skipped\n");
             continue;
         }
 
@@ -710,7 +705,7 @@ OutS win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
                     Cudd_Ref(tmp);
                     array_pushback(set_list, tmp);
                 }
-                mexPrintf("set_list = %d, c_list = %d\n", array_len(set_list), array_len(cont_list));
+                //mexPrintf("set_list = %d, c_list = %d\n", array_len(set_list), array_len(cont_list));
                 out.cont = make_recurrence_cont(sys->mgr, set_list, cont_list, "win_intermediate");
             }
         }

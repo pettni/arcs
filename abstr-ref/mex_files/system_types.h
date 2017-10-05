@@ -44,10 +44,13 @@ struct Manager {
      uint struct_count;
      BDDlist*    s_in_vars; // free
      NumList*    s_in_inds;
+     DdNode*     s_in_cube;
      BDDlist*    s_out_vars; // free
      NumList*    s_out_inds;
+     DdNode*     s_out_cube;
      BDDlist*    a_vars; // free
      NumList*    a_inds;
+     DdNode*     a_cube;
      uint        s_var_num;
      uint        a_var_num;
      EncList*    s_encs; // free one level

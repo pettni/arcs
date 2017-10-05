@@ -104,7 +104,6 @@ classdef BDDSystem < handle
         disp('Invalid encoding setting!');
         return;
       end
-      disp('MATLAB: calling C');
       mexBDD('add_s', sys.BDD_system_ID, new_state, sys.s_var_num, uint32(new_enc));
     end
   

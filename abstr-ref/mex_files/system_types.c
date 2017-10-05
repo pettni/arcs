@@ -222,51 +222,51 @@ DdNode* cont_get_simple_input(BDDCont* cont, DdNode* out_states)
 
 void free_manager(Manager* mgr)
 {
-    mexPrintf("Clearing s_in_vars\n");
+    //mexPrintf("Clearing s_in_vars\n");
     array_free(mgr->s_in_vars);
     array_free(mgr->s_in_inds);
-    mexPrintf("Clearing s_out_vars\n");
+    //mexPrintf("Clearing s_out_vars\n");
     array_free(mgr->s_out_vars);
     array_free(mgr->s_out_inds);
-    mexPrintf("Clearing a_vars\n");
+    //mexPrintf("Clearing a_vars\n");
     array_free(mgr->a_vars);
     array_free(mgr->a_inds);
-    mexPrintf("Clearing s_encodings\n");
-    mexEvalString("drawnow;");
+    //mexPrintf("Clearing s_encodings\n");
+    //mexEvalString("drawnow;");
     for (int i = 0; i < array_len(mgr->s_encs); i++)
     {
-       mexPrintf("Clearing s_encoding %d\n", i);
-       mexEvalString("drawnow;");
+       //mexPrintf("Clearing s_encoding %d\n", i);
+       //mexEvalString("drawnow;");
        if (array_get(mgr->s_encs, i) != NULL)
             array_free(array_get(mgr->s_encs, i));
     }
-    mexPrintf("Clearing s_encoding list\n");
-    mexEvalString("drawnow;");
+    //mexPrintf("Clearing s_encoding list\n");
+    //mexEvalString("drawnow;");
     array_free(mgr->s_encs);
 
-    mexPrintf("Clearing a_encodings\n");
-    mexEvalString("drawnow;");
+    //mexPrintf("Clearing a_encodings\n");
+    //mexEvalString("drawnow;");
     for (int i = 0; i < array_len(mgr->a_encs); i++)
     {
-       mexPrintf("Clearing a_encoding %d\n", i);
-       mexEvalString("drawnow;");
+       //mexPrintf("Clearing a_encoding %d\n", i);
+       //mexEvalString("drawnow;");
        if (array_get(mgr->a_encs, i) != NULL)
             array_free(array_get(mgr->a_encs, i));
     }
-    mexPrintf("Clearing a_encoding list\n");
-    mexEvalString("drawnow;");
+    //mexPrintf("Clearing a_encoding list\n");
+    //mexEvalString("drawnow;");
     array_free(mgr->a_encs);
-    mexPrintf("Clearing enc_state_map\n");
-    mexEvalString("drawnow;");
+    //mexPrintf("Clearing enc_state_map\n");
+    //mexEvalString("drawnow;");
     array_free(mgr->enc_state_map);
-    mexPrintf("Checking non-zero references: %d\n", Cudd_CheckZeroRef(mgr->manager));
+    //mexPrintf("Checking non-zero references: %d\n", Cudd_CheckZeroRef(mgr->manager));
     Cudd_Quit(mgr->manager);
 }
 
 void mgr_decr(Manager* mgr)
 {
     mgr->struct_count--;
-    mexPrintf("Decreased struct count: %d\n", mgr->struct_count);
+    //mexPrintf("Decreased struct count: %d\n", mgr->struct_count);
     if (mgr->struct_count <= 0)
         free_manager(mgr);
 }
@@ -274,5 +274,5 @@ void mgr_decr(Manager* mgr)
 void mgr_incr(Manager* mgr)
 {
     mgr->struct_count++;
-    mexPrintf("Increased struct count\n");
+    //mexPrintf("Increased struct count\n");
 }
