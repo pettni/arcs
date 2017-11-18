@@ -1,0 +1,1 @@
+gcc set_tests.c set_calcs.c -Ic:/msys64/usr/local/include -Lc:/msys64/usr/local/lib -lcudd -o set_tests.out

@@ -1,0 +1,1 @@
+gcc $1.c set_calcs.c -Ic:/msys64/usr/local/include -Lc:/msys64/usr/local/lib -lcudd -o $1.out
