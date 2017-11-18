@@ -86,7 +86,7 @@ prime_time = 0;
 while true
   
   time = toc;
-  data(end+1, :) = [iter, time, prime_time, split_time, length(part), sum(volume(part.cell_list(Win)))/volume(part.domain)];
+  data(iter+1, :) = [iter, time, prime_time, split_time, length(part), sum(volume(part.cell_list(Win)))/volume(part.domain)];
   disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ' winning set volume: ', num2str(sum(volume(part.cell_list(Win)))/volume(part.domain))]);
   disp(['iter: ', num2str(iter), ', prime_time: ', num2str(prime_time), ' | split_time: ', num2str(split_time)]);
   % Solve <>[] 'SET'
