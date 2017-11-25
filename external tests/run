@@ -36,7 +36,6 @@ do
     test_sizes=(${test_sizes[@]} ${result[0]})
     echo
 done
-echo "${test_sizes[@]}" >> run_time_data.txt
 echo "${norm_log_times[@]}" >> run_time_data.txt
 
 for i in "${range[@]}"

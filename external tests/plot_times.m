@@ -1,20 +1,16 @@
 data = load('run_time_data.txt');
-% data(1,:) BDD sizes in nodes (before reordering)
-% data(2, :) log encoding run times
-% data(3, :) split encoding run times
-% data(4, :) log encoding run times with reordering
-% data(5, :) split encoding run times with reordering
-[size_data, I] = sort(data(1,:));
+% data(1, :) log encoding run times
+% data(2, :) split encoding run times
+% data(3, :) log encoding run times with reordering
+% data(4, :) split encoding run times with reordering
 
-test_count = 7;
-
-semilogy(size_data, data(2, I), '-o');
+semilogy(data(1, :), '-o');
 hold on
-semilogy(size_data, data(3, I), '-o');
-semilogy(size_data, data(4, I), '-o');
-semilogy(size_data, data(5, I), '-o');
+semilogy(data(2, :), '-o');
+semilogy(data(3, :), '-o');
+semilogy(data(4, :), '-o');
 hold off
-xlabel('original BDD size (in nodes)');
+xlabel('Test id');
 ylabel('win primal CPU time (s)');
 legend('Log', 'Split', 'Reordered log', 'Reordered split', ...
       'Location', 'northwest');
