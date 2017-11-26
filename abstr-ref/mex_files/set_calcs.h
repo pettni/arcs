@@ -29,5 +29,4 @@ OutS inv(BDDSys* sys, DdNode* Z, DdNode* B, DdNode* U, DdNode* G,
             char quant, int mode);
 
 OutS pre(BDDSys* sys, DdNode* X_prime, DdNode* A, char quant1, char quant2, int mode);
-
 #endif

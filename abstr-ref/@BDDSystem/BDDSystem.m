@@ -248,6 +248,20 @@ classdef BDDSystem < handle
       if nargin < 7
         V = [];
       end
+      if strcmp(quant1, 'exists')
+        quant1 = true;
+      elseif strcmp(quant1, 'forall')
+        quant1 = false;
+      else
+        error('BDDSystem:win_primal:invalid_quantifier', 'Quantifier 1 is invalid');
+      end
+      if strcmp(quant2, 'exists')
+        quant2 = true;
+      elseif strcmp(quant2, 'forall')
+        quant2 = false;
+      else
+        error('BDDSystem:win_primal:invalid_quantifier', 'Quantifier 2 is invalid');
+      end
       if nargout == 1
         V = mexBDD('win_primal', sys.BDD_system_ID, A, B, C_list, quant1, quant2, V);
       elseif nargout == 2

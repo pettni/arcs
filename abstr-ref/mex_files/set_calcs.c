@@ -403,7 +403,7 @@ OutS win_until(BDDSys* sys, DdNode* Z, DdNode* B, char quant, int mode)
         deref(old_X);
         old_X = X;
 
-        OutS pre_in = pre(sys, X, one, quant, 'a', mode);
+        OutS pre_in = pre(sys, X, sys->all_actions, quant, 'a', mode);
         pre_set = pre_in.win_set;
         tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
@@ -608,7 +608,7 @@ OutS win_intermediate(BDDSys* sys, DdNode* A, DdNode* B, DdNode* Z,
     {
         deref(old_W);
         old_W = W;
-        OutS pre_set_in = pre(sys, W, one, quant, 'a', WIN_SET);
+        OutS pre_set_in = pre(sys, W, sys->all_actions, quant, 'a', WIN_SET);
         pre_set = pre_set_in.win_set;
         tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);
@@ -780,7 +780,7 @@ OutS win_primal(BDDSys* sys, DdNode* A, DdNode* B, DdNode** C, int C_num,
         else
             remove_old = 0;
         old_V = V;
-        OutS pre_set_in = pre(sys, V, one, quant1, 'a', WIN_SET);
+        OutS pre_set_in = pre(sys, V, sys->all_actions, quant1, 'a', WIN_SET);
         pre_set = pre_set_in.win_set;
         tmp = Cudd_bddSwapVariables(manager, pre_set, array_list(sys->mgr->s_in_vars), array_list(sys->mgr->s_out_vars), sys->mgr->s_var_num);
         Cudd_Ref(tmp);

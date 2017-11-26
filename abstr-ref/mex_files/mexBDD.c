@@ -778,8 +778,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           if (action_num == 0)
           {
                Cudd_RecursiveDeref(manager, action_BDD);
-               action_BDD = Cudd_ReadOne(manager);
-               Cudd_Ref(action_BDD);
+               action_BDD = given_sys->all_actions;
           }
 
           // reading quantifiers
@@ -793,7 +792,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           uint** pre_states = read_in_states(given_sys->mgr, pre_set.win_set);
           Cudd_RecursiveDeref(manager, pre_set.win_set);
           Cudd_RecursiveDeref(manager, state_BDD);
-          Cudd_RecursiveDeref(manager, action_BDD);
+          if (action_num != 0)
+            Cudd_RecursiveDeref(manager, action_BDD);
           // return output
           uint pre_num = (uint)*(pre_states[0]);
           plhs[0] = mxCreateDoubleMatrix(pre_num, 1, mxREAL);
@@ -1447,10 +1447,10 @@ BDDSys* initializeBDD(uint var_num, EncList* _s_encs, uint a_var_num, EncList* _
           NumList* enc = array_get(_a_encs, i);
           array_set(a_encs, i, enc);
           array_make_persist(array_get(a_encs, i));
-          printf("Adding action encoding %d: ", i);
-          for (int i = 0; i < array_len(enc); i++)
-               printf("%d", array_get(enc, i));
-          printf("\n");
+          //printf("Adding action encoding %d: ", i);
+          //for (int i = 0; i < array_len(enc); i++)
+          //     printf("%d", array_get(enc, i));
+          //printf("\n");
 
           // Add to set
           DdNode* action_cube = Cudd_bddComputeCube(manager, array_list(sys.mgr->a_vars), array_list(enc), sys.mgr->a_var_num);
