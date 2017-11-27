@@ -22,7 +22,7 @@ reord_split_times=()
 test_sizes=()
 range=($(seq 1 1 7))
 
-test_nums=(50 50 200 20 20 50 50)
+test_nums=(50 50 200 10 10 50 30)
 reord_test_nums=(300 300 500 100 100 300 300)
 
 rm run_time_data.txt

@@ -170,10 +170,10 @@ classdef TransSyst<handle
 
     function ret = num_trans(ts)
       % Number of transitions
-      if strcmp(ts.sys_setting, TransSyst.sparse_set)
-        ret = length(ts.state1);
-      elseif strcmp(ts.sys_setting, TransSyst.bdd_set)
+      if strcmp(ts.sys_setting, TransSyst.bdd_set)
         ret = ts.bdd_sys.num_trans();
+      else
+        ret = length(ts.state1);
       end
     end
     
