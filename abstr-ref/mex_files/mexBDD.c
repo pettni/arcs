@@ -547,6 +547,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           array_free(U);
           array_free(G);
      }
+     else if (strcmp(command, "count_pg") == 0)
+     {
+          plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+          double* ptr = mxGetPr(plhs[0]);
+          *ptr = (double)array_len(given_sys->pg_U);
+     }
      else if (strcmp(command, "read_pg") == 0)
      {
           uint ind = (uint)mxGetScalar(prhs[2]) - 1;
@@ -1221,16 +1227,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      }
      else if (strcmp(command, "print_encs") == 0)
      {
-          //mexPrintf("Encodings:\n");
+          mexPrintf("Encodings:\n");
           for (int i = 0; i < array_len(given_sys->mgr->s_encs); i++)
           {
-               //mexPrintf("%d ", i);
+               mexPrintf("%d ", i);
                NumList* enc = array_get(given_sys->mgr->s_encs, i);
                for (int j = 0; j < array_len(enc); j++)
                {
-                    //mexPrintf("%d", array_get(enc, j));
+                    mexPrintf("%d", array_get(enc, j));
                }
-               //mexPrintf("\n");
+               mexPrintf("\n");
           }
      }
      else if (strcmp(command, "debug") == 0)

@@ -146,6 +146,10 @@ classdef BDDSystem < handle
       mexBDD('rm_pg', sys.BDD_system_ID, ind);
     end
     
+    function num = get_pg_num(sys)
+      num = mexBDD('count_pg', sys.BDD_system_ID);
+    end
+    
     function [U, G] = get_progress_group(sys, ind)
       [U, G] = mexBDD('read_pg', sys.BDD_system_ID, ind);
       U = sort(U);

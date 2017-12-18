@@ -164,6 +164,16 @@ classdef TransSyst<handle
         ts.pg_U{end+1} = U;
         ts.pg_G{end+1} = G;
       elseif strcmp(ts.sys_setting, TransSyst.bdd_set)
+        % Remove any pgs that are inferior
+        pg_num = ts.bdd_sys.get_pg_num();
+        for i=pg_num:-1:1
+          [pg_U, pg_G] = ts.bdd_sys.get_progress_group(i);
+          if all(ismember(pg_U, U)) && ...
+              all(ismember(pg_G, G))
+            ts.bdd_sys.rm_progress_group(i);
+          end
+        end
+        
         ts.bdd_sys.add_progress_group(U, G);
       end
     end
@@ -192,6 +202,27 @@ classdef TransSyst<handle
       manageBDD('initialize', ts.n_s, ts.s_var_num, ts.state_encodings, ts.a_var_num, ts.n_a, ts.action_encodings);
     end
     
-    
+    function toggle_setting(ts)
+      % Converts the current Transition system to use the list
+      % representation from a BDD representation
+      % (given it has that setting)
+      
+      % get all transitions
+      if strcmp(ts.sys_setting, TransSyst.bdd_set)
+        [s_in, a, s_out] = ts.bdd_sys.get_trans_with_state(1:ts.n_s);
+        ts.state1 = s_in;
+        ts.action = a;
+        ts.state2 = s_out;
+
+        pg_num = ts.bdd_sys.get_pg_num();
+        for i = 1:pg_num
+          [ts.pg_U{i}, ts.pg_G{i}] = ts.bdd_sys.get_progress_group(i);
+        end
+
+        ts.fast_enabled = false;
+        ts.sys_setting = TransSyst.sparse_set;
+        ts.bdd_sys = [];
+      end
+    end
   end
 end
