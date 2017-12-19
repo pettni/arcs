@@ -1,0 +1,11 @@
+sizes=(2750 3000 3250)
+
+for s in "${sizes[@]}"
+do
+    ./BDDstate_build.exe $s split < part_at_${s}_split.txt
+done
+
+for s in "${sizes[@]}"
+do
+    ./BDDstate_build.exe $s log < part_at_${s}_log.txt
+done

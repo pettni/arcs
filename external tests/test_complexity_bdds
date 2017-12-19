@@ -1,0 +1,77 @@
+
+dat="data/"
+t1="complexity_test1/"
+t2="complexity_test2/"
+t3="complexity_test3/"
+t4="complexity_test4/"
+t5="complexity_test5/"
+t6="complexity_test6/"
+t7="complexity_test7/"
+t8="complexity_test8/"
+t9="complexity_test9/"
+t10="complexity_test10/"
+t11="complexity_test11/"
+t12="complexity_test12/"
+s="split"
+l="log"
+struct="saved_BDD_"
+trans="BDD_statetest_"
+U="saved_U_groups_"
+G="saved_G_groups_"
+test="win_primal_test.txt"
+
+norm_log_times=()
+norm_split_times=()
+reord_log_times=()
+reord_split_times=()
+test_sizes=()
+range=($(seq 1 1 12))
+
+test_nums=(10000 200 100 50 30 20 10 5 1 1 1 1)
+reord_test_nums=(10000 200 100 50 30 30 30 20 10 10 5 5)
+
+rm complexity_data.txt
+for i in "${range[@]}"
+do
+    t="t$i"
+    t=${!t}
+    echo Running test $i for logarithmic encoding
+    result=($(./set_tests.out "$dat$t$struct$l" "$dat$t$trans$l.txt" "$dat$t$U$l" "$dat$t$G$l" "$dat$t$test" time 0 ${test_nums[$(($i-1))]}))
+    norm_log_times=(${norm_log_times[@]} ${result[1]})
+    test_sizes=(${test_sizes[@]} ${result[0]})
+    echo
+done
+echo "${norm_log_times[@]}" >> complexity_data.txt
+
+for i in "${range[@]}"
+do
+    t="t$i"
+    t=${!t}
+    echo Running test $i for split encoding
+    result=($(./set_tests.out "$dat$t$struct$s" "$dat$t$trans$s.txt" "$dat$t$U$s" "$dat$t$G$s" "$dat$t$test" time 0 ${test_nums[$(($i-1))]}))
+    norm_split_times=(${norm_split_times[@]} ${result[1]})
+    echo
+done
+echo "${norm_split_times[@]}" >> complexity_data.txt
+
+for i in "${range[@]}"
+do
+    t="t$i"
+    t=${!t}
+    echo Running test $i for logarithmic encoding and reordering
+    result=($(./set_tests.out "$dat$t$struct$l" "$dat$t$trans$l.txt" "$dat$t$U$l" "$dat$t$G$l" "$dat$t$test" time 1 ${test_nums[$(($i-1))]}))
+    reord_log_times=(${reord_log_times[@]} ${result[1]})
+    echo
+done
+echo "${reord_log_times[@]}" >> complexity_data.txt
+
+for i in "${range[@]}"
+do
+    t="t$i"
+    t=${!t}
+    echo Running test $i for split encoding with reordering
+    result=($(./set_tests.out "$dat$t$struct$s" "$dat$t$trans$s.txt" "$dat$t$U$s" "$dat$t$G$s" "$dat$t$test" time 1 ${test_nums[$(($i-1))]}))
+    reord_split_times=(${reord_split_times[@]} ${result[1]})
+    echo
+done
+echo "${reord_split_times[@]}" >> complexity_data.txt

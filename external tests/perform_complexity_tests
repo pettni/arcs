@@ -1,0 +1,3 @@
+./test_bdds
+
+matlab -nodesktop -r 'test_list_rep; quit'
