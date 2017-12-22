@@ -123,7 +123,7 @@ while true
   iter = iter + 1;
 end
 
-save('end_to_end_split.mat', 'data');
+save('end_to_end_log.mat', 'data');
 % Split final set to eliminate Zeno
 % if split_inv
 %   inv_set = part.ts.win_primal(part.get_cells_with_ap({'SET'}), ...
