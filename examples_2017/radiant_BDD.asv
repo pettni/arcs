@@ -21,8 +21,7 @@ encoding_setting = BDDSystem.split_enc;
 % max # of synthesis-refinement steps
 maxiter = 3000;
 
-% flag for measuring memory
-measure_mem = true;
+% flag for measuring memo
 
 % Target set
 goal_set = Rec([21 27; 22 25; 22 25], {'SET'});
@@ -89,11 +88,7 @@ part.search_trans_reg(pg_depth);
 Win = [];
 iter = 0;
 max_time = 3600;
-if measure_mem
-  data = zeros(maxiter, 9);
-else
-  data = zeros(maxiter, 6);
-end
+data = zeros(maxiter, 9);
 elapsed_time = 0;
 %part.ts.bdd_sys.dyn_reordering(false);
 split_time = 0;
@@ -102,19 +97,13 @@ prime_time = 0;
 while true
   
   time = toc;
-  if measure_mem
-    nodes = part.ts.bdd_sys.count_nodes();
-    sys_nodes = part.ts.bdd_sys.count_system_nodes();
-    mem = part.ts.bdd_sys.measure_memory();
-    data(iter+1, :) = [iter, time, prime_time, split_time, length(part), sum(volume(part.cell_list(Win)))/volume(part.domain), nodes, sys_nodes, mem];
-  else
-    data(iter+1, :) = [iter, time, prime_time, split_time, length(part), sum(volume(part.cell_list(Win)))/volume(part.domain)];
-  end
+  nodes = part.ts.bdd_sys.count_nodes();
+  sys_nodes = part.ts.bdd_sys.count_system_nodes();
+  mem = part.ts.bdd_sys.measure_memory();
+  data(iter+1, :) = [iter, time, prime_time, split_time, length(part), sum(volume(part.cell_list(Win)))/volume(part.domain), nodes, sys_nodes, mem];
   disp(['iteration ', num2str(iter), ', time ', num2str(time), ', states ', num2str(length(part)), ' winning set volume: ', num2str(sum(volume(part.cell_list(Win)))/volume(part.domain))]);
   disp(['iter: ', num2str(iter), ', prime_time: ', num2str(prime_time), ' | split_time: ', num2str(split_time)]);
-  if measure_mem
-    disp(['Total nodes: ', num2str(nodes), ', system nodes: ', num2str(sys_nodes), ', Memory: ', num2str(mem/1024), 'kB']);
-  end
+  disp(['Total nodes: ', num2str(nodes), ', system nodes: ', num2str(sys_nodes), ', Memory: ', num2str(mem/1024), 'kB']);
   % Solve <>[] 'SET'
   B = part.get_cells_with_ap({'SET'});
   
