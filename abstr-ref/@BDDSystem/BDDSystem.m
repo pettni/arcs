@@ -314,6 +314,10 @@ classdef BDDSystem < handle
       count = mexBDD('count_dead_nodes', sys.BDD_system_ID);
     end
     
+    function mem = measure_memory(sys)
+      mem = mexBDD('measure_memory', sys.BDD_system_ID);
+    end
+    
     function reorder(sys, bound)
       mexBDD('reorder', sys.BDD_system_ID, bound);
     end

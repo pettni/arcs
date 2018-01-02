@@ -1261,6 +1261,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           double* ptr = mxGetPr(plhs[0]);
           *ptr = (double)Cudd_ReadDead(get_mgr(given_sys));
      }
+     else if (strcmp(command, "measure_memory") == 0)
+     {
+          plhs[0] = mxCreateDoubleMatrix(1,1,mxREAL);
+          double* ptr = mxGetPr(plhs[0]);
+          *ptr = (double)Cudd_ReadMemoryInUse(get_mgr(given_sys));
+     }
      else if (strcmp(command, "reorder") == 0)
      {
           uint bound = (uint)mxGetScalar(prhs[2]);
