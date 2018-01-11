@@ -1,0 +1,69 @@
+
+dat="data/"
+t1="test1/"
+t2="test2/"
+t3="test3/"
+t4="test4/"
+t5="test5/"
+t6="test6/"
+t7="test7/"
+s="split"
+l="log"
+struct="saved_BDD_"
+trans="BDD_statetest_"
+U="saved_U_groups_"
+G="saved_G_groups_"
+test="win_primal_test.txt"
+
+norm_log_times=()
+norm_split_times=()
+reord_log_times=()
+reord_split_times=()
+test_sizes=()
+range=($(seq 1 1 7))
+
+test_nums=(50 50 200 10 10 50 30)
+reord_test_nums=(300 300 500 100 100 300 300)
+
+rm run_time_data.txt
+for i in "${range[@]}"
+do
+    t="t$i"
+    t=${!t}
+    echo Running test $i for logarithmic encoding
+    result=($(./set_tests.out "$dat$t$struct$l" "$dat$t$trans$l.txt" "$dat$t$U$l" "$dat$t$G$l" "$dat$t$test" time 0 ${test_nums[$(($i-1))]}))
+    norm_log_times=(${norm_log_times[@]} ${result[1]})
+    test_sizes=(${test_sizes[@]} ${result[0]})
+    echo
+done
+echo "${norm_log_times[@]}" >> run_time_data.txt
+
+for i in "${range[@]}"
+do
+    t="t$i"
+    t=${!t}
+    echo Running test $i for split encoding
+    result=($(./set_tests.out "$dat$t$struct$s" "$dat$t$trans$s.txt" "$dat$t$U$s" "$dat$t$G$s" "$dat$t$test" time 0 ${test_nums[$(($i-1))]}))
+    norm_split_times=(${norm_split_times[@]} ${result[1]})
+done
+echo "${norm_split_times[@]}" >> run_time_data.txt
+
+for i in "${range[@]}"
+do
+    t="t$i"
+    t=${!t}
+    echo Running test $i for logarithmic encoding and reordering
+    result=($(./set_tests.out "$dat$t$struct$l" "$dat$t$trans$l.txt" "$dat$t$U$l" "$dat$t$G$l" "$dat$t$test" time 1 ${test_nums[$(($i-1))]}))
+    reord_log_times=(${reord_log_times[@]} ${result[1]})
+done
+echo "${reord_log_times[@]}" >> run_time_data.txt
+
+for i in "${range[@]}"
+do
+    t="t$i"
+    t=${!t}
+    echo Running test $i for split encoding with reordering
+    result=($(./set_tests.out "$dat$t$struct$s" "$dat$t$trans$s.txt" "$dat$t$U$s" "$dat$t$G$s" "$dat$t$test" time 1 ${test_nums[$(($i-1))]}))
+    reord_split_times=(${reord_split_times[@]} ${result[1]})
+done
+echo "${reord_split_times[@]}" >> run_time_data.txt

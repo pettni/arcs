@@ -29,7 +29,7 @@ pg_depth = 2;
 %%%%%%%%%%%%%%%%%%%%%%%
 
 % Load model
-cd radiant_data
+cd examples_2017/radiant_data
   if strcmp(model, 'realistic')
     [a1 k1 e1 a2 k2 e2] = radiant_dyn();
   elseif strcmp(model, 'cdc2014')
@@ -41,7 +41,7 @@ cd radiant_data
   else
     error('invalid model')
   end
-cd ..
+cd ../..
 
 tic
 

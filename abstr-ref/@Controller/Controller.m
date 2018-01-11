@@ -5,10 +5,20 @@ classdef Controller<handle
     subcontrollers; % List of Controller or containers.Map
     control_type;   % One of 'reach', 'recurrence', and 'simple'
     mem_var;        % Memory variable needed for higher-level controller
+  
+    bdd_cont;       % BDD counterpart
+    setting;        % 'sparse' or 'bdd'
   end
 
   properties (SetAccess={?TransSyst})
     from = [];
+  end
+  
+  methods (Static=true,Access={?BDDSystem})
+    function cont = fromBDD(ID)
+      cont.bdd_cont = BDDController(ID);
+      cont.setting = 'bdd';
+    end
   end
 
   methods
@@ -36,6 +46,7 @@ classdef Controller<handle
         error('simple controller: second argument must be containers.Map')
       end
 
+      cont.setting = 'sparse';
       cont.sets = set_list;
       cont.subcontrollers = c_list;
       cont.control_type = c_type;
@@ -58,66 +69,74 @@ classdef Controller<handle
     end
 
     function  a_list = get_input(cont, state)
-      % Return controller input for 'state'
-      if strcmp(cont.control_type, 'simple')
-        if ~ismember(state, cont.sets)
-          error('outside controller domain')
+      if strcmp(cont.setting, 'bdd')
+        a_list = cont.bdd_cont.get_input(state);
+      else
+        % Return controller input for 'state'
+        if strcmp(cont.control_type, 'simple')
+          if ~ismember(state, cont.sets)
+            error('outside controller domain')
+          end
+          
+          a_list = cont.subcontrollers(state);
+          return
         end
-
-        a_list = cont.subcontrollers(state);
-        return
-      end
-
-      bottom_cnt = cont;
-      while ~isa(bottom_cnt.subcontrollers, 'containers.Map')
-
-        if strcmp(bottom_cnt.control_type, 'reach')
-          if ismember(state, bottom_cnt.sets{max(1, bottom_cnt.mem_var-1)})
-            % See if moved to lower
-            bottom_cnt.mem_var = max(1, bottom_cnt.mem_var-1);
-            
-            % Test for skipping the error of progress group sets (Zexiang)
-            % When creating the cont of pg, set V and a empty
-            % controller will always be added at first, which causes error
-            % when execute line 114 'a_list = bottom_cnt.subcontrollers(state);'
-            if(bottom_cnt.mem_var~=1)
+        
+        bottom_cnt = cont;
+        while ~isa(bottom_cnt.subcontrollers, 'containers.Map')
+          
+          if strcmp(bottom_cnt.control_type, 'reach')
+            if ismember(state, bottom_cnt.sets{max(1, bottom_cnt.mem_var-1)})
+              % See if moved to lower
+              bottom_cnt.mem_var = max(1, bottom_cnt.mem_var-1);
+              
+              % Test for skipping the error of progress group sets (Zexiang)
+              % When creating the cont of pg, set V and a empty
+              % controller will always be added at first, which causes error
+              % when execute line 114 'a_list = bottom_cnt.subcontrollers(state);'
+              if(bottom_cnt.mem_var~=1)
                 continue;
+              end
+              
+            elseif ~ismember(state, bottom_cnt.sets{bottom_cnt.mem_var})
+              % Do whole search
+              for i = 1:length(bottom_cnt.sets)
+                if ismember(state, bottom_cnt.sets{i})
+                  bottom_cnt.mem_var = i;
+                  break
+                end
+              end
+            end
+            if ~ismember(state, cont.sets{cont.mem_var})
+              error('outside controller domain')
             end
             
-          elseif ~ismember(state, bottom_cnt.sets{bottom_cnt.mem_var})
-            % Do whole search
-            for i = 1:length(bottom_cnt.sets)
-              if ismember(state, bottom_cnt.sets{i})
-                bottom_cnt.mem_var = i;
-                break
+          elseif strcmp(bottom_cnt.control_type, 'recurrence')
+            if ~ismember(state, bottom_cnt.sets{1})
+              error('outside controller domain')
+            end
+            if ismember(state, bottom_cnt.sets{bottom_cnt.mem_var + 1})
+              if bottom_cnt.mem_var == length(bottom_cnt.subcontrollers)
+                bottom_cnt.mem_var = 1;
+              else
+                bottom_cnt.mem_var = bottom_cnt.mem_var + 1;
               end
             end
           end
-          if ~ismember(state, cont.sets{cont.mem_var})
-            error('outside controller domain')
-          end
-        
-        elseif strcmp(bottom_cnt.control_type, 'recurrence')
-          if ~ismember(state, bottom_cnt.sets{1})
-            error('outside controller domain')
-          end
-          if ismember(state, bottom_cnt.sets{bottom_cnt.mem_var + 1})
-            if bottom_cnt.mem_var == length(bottom_cnt.subcontrollers)
-              bottom_cnt.mem_var = 1;
-            else
-              bottom_cnt.mem_var = bottom_cnt.mem_var + 1;
-            end
-          end
+          bottom_cnt = bottom_cnt.subcontrollers{bottom_cnt.mem_var};
         end
-        bottom_cnt = bottom_cnt.subcontrollers{bottom_cnt.mem_var};
+        a_list = bottom_cnt.subcontrollers(state);
       end
-      a_list = bottom_cnt.subcontrollers(state);
     end
 
     function restrict_to(cont, r_set)
       % Restrict controller domain
       if strcmp(cont.control_type, 'simple')
-        cont.sets = intersect(cont.sets, r_set);
+        if strcmp(cont.setting, 'sparse')
+          cont.sets = intersect(cont.sets, r_set);
+        else
+          cont.bdd_cont.restrict_to(r_set);
+        end
       else
         error('complex controller cant be restricted')
       end

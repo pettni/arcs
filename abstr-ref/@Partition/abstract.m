@@ -1,4 +1,4 @@
-function abstract(part, dyn_list, vars, drec)
+function abstract(part, dyn_list, vars, drec, sys_set, enc_set)
     % abstract: abstract the dynamics in dyn_list = {fx1, ..., fxM}
     %
     % Dynamics:  \dot x = f_m(x, d), f polynomial
@@ -13,10 +13,17 @@ function abstract(part, dyn_list, vars, drec)
   if nargin < 4
     drec = [];
   end
+  if nargin < 5
+    sys_set = TransSyst.sparse_set;
+  end
+  
+  if nargin < 6
+    enc_set = BDDSystem.split_enc;
+  end
 
   M = length(dyn_list);
 
-  part.create_ts();
+  part.create_ts(sys_set, enc_set);
   part.d_rec = drec;
 
   % Convert and save in partition

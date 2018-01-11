@@ -5,6 +5,18 @@ function [V, Cv, cont] = win_until_and_always(ts, A, B, P, quant1)
   %
   % Note: A must be sorted
   % Returns a sorted set
+  
+  if strcmp(ts.sys_setting, TransSyst.bdd_set)
+    if nargout == 1
+      V = ts.bdd_sys.win_until_and_always(A, B, P, quant1);
+    elseif nargout == 2
+      [V, Cv] = ts.bdd_sys.win_until_and_always(A, B, P, quant1);
+    elseif nargout == 3
+      [V, Cv, cont] = ts.bdd_sys.win_until_and_always(A, B, P, quant1);
+    end
+    return;
+  end
+  
   if ~isempty(setdiff(1:ts.n_s, A))
     % Need to worry about []A
     if nargout > 2

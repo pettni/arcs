@@ -8,6 +8,15 @@ function [V, cont] = pre(ts, X, U, quant1, quant2)
   % quant = false: forall  (non controllable)
   % quant = true: exists   (controllable)
 
+  if strcmp(ts.sys_setting, TransSyst.bdd_set)
+    if (nargout == 1)
+      V = ts.bdd_sys.pre(X, U, quant1, quant2);
+    elseif nargout == 2
+      [V, cont] = ts.bdd_sys.pre(X,U,quant1,quant2);
+    end
+    return;
+  end
+  
   if nargout > 1
     Kmap = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
   end

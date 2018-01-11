@@ -6,6 +6,17 @@ function [V, Cv, cont] = win_until(ts, B, P, quant1)
   % Returns a sorted set
   %
   % Exanding algo
+  
+  if strcmp(ts.sys_setting, TransSyst.bdd_set)
+    if nargout == 1
+      V = ts.bdd_sys.win_until(B, P, quant1);
+    elseif nargout == 2
+      [V, Cv] = ts.bdd_sys.win_until(B, P, quant1);
+    elseif nargout == 3
+      [V, Cv, cont] = ts.bdd_sys.win_until(B, P, quant1);
+    end
+    return;
+  end
 
   V = uint32([]);
   Vlist = {};

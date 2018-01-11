@@ -1,0 +1,3 @@
+gcc -g $1.c -Ic:/msys64/usr/local/include -Lc:/msys64/usr/local/lib -lcudd -o $1.out
+
+gcc -g $1.c -Ic:/msys64/usr/local/include -Lc:/msys64/usr/local/lib -lcudd -o $1.exe

@@ -1,6 +1,6 @@
-# ABSTR-REFINEMENT
+# ARCS
 
-Toolbox in development for incremental synthesis of correct-by-construction switching protocols. 
+Toolbox in development for abstraction-refinement-based incremental synthesis of correct-by-construction switching protocols.
 
 ## Functionality
 
@@ -14,10 +14,12 @@ Toolbox in development for incremental synthesis of correct-by-construction swit
  - Yalmip and a supported solver is required for semidefinite optimization, tested version R20160930.
  - [Mosek](https://mosek.com) for conic optimization, tested with version 8.
  - [arrow.m](https://www.mathworks.com/matlabcentral/fileexchange/278-arrow) for certain plotting.
-
+ - Windows 64bit and Linux 64bit for BDD support (so far) or MATLAB mex compiler to compile mex function
 ## Usage
 
 Add the folder ```abstr-ref``` to the Matlab path: ```addpath /path/to/abstr-ref```.
+
+To use BDDs with the precompiled mex files,  add the folder ```abstr-ref/mex_files``` to the Matlab path: ```addpath /path/to/abstr-ref/mex_files```.
 
 Run tests:
 ```
@@ -36,6 +38,8 @@ Petter Nilsson, University of Michigan, pettni@umich.edu
 
 Necmiye Ozay, University of Michigan
 
+Oscar Lindvall Bulancea, KTH
+
 ## Todo list
 
  - Add custom sos through PolyLinTrans
@@ -47,6 +51,10 @@ Necmiye Ozay, University of Michigan
     - System-level test
  - Improve documentation
  - Write custom SOS optimization to avoid overhead (translate python socp impl.)
+ - Add BDD support for controller extraction and dual sets
+ - Save/load functions for BDD transition system
+ - Improve documentation and type security of mex code
+ - Add tests for BDD implementation
 
 ## References
 
