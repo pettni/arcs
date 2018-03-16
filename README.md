@@ -11,6 +11,7 @@ Toolbox in development for abstraction-refinement-based incremental synthesis of
 ## Requirements
 
  - Matlab 2015b or newer. Older versions work if the calls to ```builtin('_ismemberhelper',aPost,X)``` in ```pre.m``` are replaced with ```ismember(aPost, X)```, but this will be slower.
+ 	- Communications Systems Toolbox
  - Yalmip and a supported solver is required for semidefinite optimization, tested version R20160930.
  - [Mosek](https://mosek.com) for conic optimization, tested with version 8.
  - [arrow.m](https://www.mathworks.com/matlabcentral/fileexchange/278-arrow) for certain plotting.
@@ -18,8 +19,6 @@ Toolbox in development for abstraction-refinement-based incremental synthesis of
 ## Usage
 
 Add the folder ```abstr-ref``` to the Matlab path: ```addpath /path/to/abstr-ref```.
-
-To use BDDs with the precompiled mex files,  add the folder ```abstr-ref/mex_files``` to the Matlab path: ```addpath /path/to/abstr-ref/mex_files```.
 
 Run tests:
 ```
@@ -32,9 +31,13 @@ cd examples/
 linear_engine
 ```
 
+## Recompile mex files
+
+If for some reason the pre-compiled mex files do not work, run the script ```compile_mex``` in the ```mex_files``` folder. This should create a new mex file that can be moved to the ```abstr-ref/``` folder.
+
 ## Authors
 
-Petter Nilsson, University of Michigan, pettni@umich.edu
+Petter Nilsson, Caltech, pettni@caltech.edu
 
 Necmiye Ozay, University of Michigan
 
