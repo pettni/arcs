@@ -68,7 +68,7 @@ classdef Controller<handle
       end 
     end
 
-    function  a_list = get_input(cont, state)
+    function a_list = get_input(cont, state)
       if strcmp(cont.setting, 'bdd')
         a_list = cont.bdd_cont.get_input(state);
       else
@@ -126,6 +126,16 @@ classdef Controller<handle
           bottom_cnt = bottom_cnt.subcontrollers{bottom_cnt.mem_var};
         end
         a_list = bottom_cnt.subcontrollers(state);
+      end
+    end
+
+    function reset(cont)
+      % reset internal memory states
+      cont.mem_var = 1;
+      if ~isa(cont.subcontrollers, 'containers.Map')
+        for i = 1:length(cont.subcontrollers)
+          cont.subcontrollers{i}.reset();
+        end
       end
     end
 

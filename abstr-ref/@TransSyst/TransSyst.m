@@ -15,17 +15,16 @@ classdef TransSyst<handle
     state2; 
     action;
 
-    % cell with one sparse transition matrix for each action
-    trans_array;
+    % Cell with one sparse transition matrix for each action
+    % compute with trans_array_enable() when TS is fully constructed
+    array_computed = false;
+    trans_array = [];
     
     % Progress groups
     pg_U = {};
     pg_G = {};
 
     % Pre-computed pre_all and post maps for speed (sparse)
-    fast_post = {};
-    fast_pre_all = {};
-    array_computed = false;
   end
   
   properties (Constant)
