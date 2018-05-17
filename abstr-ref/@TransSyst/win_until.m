@@ -5,7 +5,7 @@ function [V, Cv, cont] = win_until(ts, B, P, quant1)
   %
   % Returns a sorted set
   %
-  % Exanding algo
+  % Expanding algo
   
   if strcmp(ts.sys_setting, TransSyst.bdd_set)
     if nargout == 1

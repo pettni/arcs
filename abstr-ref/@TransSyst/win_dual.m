@@ -31,8 +31,6 @@ function [V, Cv, cont] = win_dual(ts, A, B_list, C, quant1, quant2)
     return
   end
 
-  ts.create_fast();
-
   V = uint32(1:ts.n_s);
 
   while true

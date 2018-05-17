@@ -67,8 +67,6 @@ function [V, Cv, cont] = win_primal(ts, A, B, C_list, quant1, quant2, V)
   V = uint32(V);
   A = sort(A);
 
-  ts.create_fast();
-
   iter = 1;
   while true
     Z = ts.pre(V, [], quant1_bool, false);
