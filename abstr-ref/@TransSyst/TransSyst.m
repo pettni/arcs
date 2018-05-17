@@ -14,7 +14,8 @@ classdef TransSyst<handle
     state1;
     state2; 
     action;
-    % transition matrix, equivalent to state1, state2, action;
+
+    % cell with one sparse transition matrix for each action
     trans_array;
     
     % Progress groups
@@ -24,7 +25,7 @@ classdef TransSyst<handle
     % Pre-computed pre_all and post maps for speed (sparse)
     fast_post = {};
     fast_pre_all = {};
-    fast_enabled = false;
+    array_computed = false;
   end
   
   properties (Constant)
@@ -67,7 +68,7 @@ classdef TransSyst<handle
       % Add an action, return its number
       ts.n_a = ts.n_a + 1;
       numact = ts.n_a;
-      ts.fast_enabled = false;
+      ts.array_computed = false;
       
       if strcmp(ts.sys_setting, ts.bdd_set)
         ts.bdd_sys.add_action(ts.n_a);
@@ -78,35 +79,11 @@ classdef TransSyst<handle
       % Add a state, return its number
       ts.n_s = ts.n_s + 1;
       numstate = ts.n_s;
-      ts.fast_enabled = false;
+      ts.array_computed = false;
       
       if nargin > 1 && strcmp(ts.sys_setting, ts.bdd_set)
         ts.bdd_sys.add_state(old_state, ts.n_s);
       end
-    end
-
-    function create_fast(ts)
-      % Compute and store quick-access backward and forward
-      % transition maps
-      if ts.fast_enabled
-          return
-      end
-      ts.fast_post = cell(1, ts.n_s * ts.n_a);
-      ts.fast_pre_all = cell(1, ts.n_s);
-
-      for i=1:ts.num_trans()
-          s1 = ts.state1(i);
-          s2 = ts.state2(i);
-          a = ts.action(i);
-          if s2 > ts.n_s
-            disp('here');
-          end
-          ts.fast_post{(a-1)*ts.n_s + s1}(end+1) = s2;
-          ts.fast_pre_all{s2}(end+1) = s1;
-      end
-      % enable trans_array
-      ts.trans_array_enable();
-      ts.fast_enabled = true;
     end
 
     function add_transition(ts, s1, s2, a)
@@ -122,8 +99,7 @@ classdef TransSyst<handle
         ts.state1 = [ts.state1; s1];
         ts.state2 = [ts.state2; s2];
         ts.action = [ts.action; a];
-        ts.fast_enabled = false;
-%         disp(['Sparse: added trans (', num2str(s1), ',', num2str(a),',',num2str(s2),')']);
+        ts.array_computed = false;
       elseif strcmp(ts.sys_setting, TransSyst.bdd_set)
         ts.bdd_sys.add_transition(s1, a, s2);
       end
@@ -164,7 +140,7 @@ classdef TransSyst<handle
             ts.pg_G(i) = [];
           end
         end
-        
+
         ts.pg_U{end+1} = U;
         ts.pg_G{end+1} = G;
       elseif strcmp(ts.sys_setting, TransSyst.bdd_set)
@@ -192,8 +168,19 @@ classdef TransSyst<handle
     end
     
     function trans_array_enable(ts)
+      % Compute the array representation from list representation
+      if ts.array_computed
+        return
+      end
       % build trans_array
-        ts.trans_array = ts2array(ts);
+      ts.trans_array = cell(ts.n_a,1);
+      for i = 1:ts.n_a
+          % change sub to idx s.t. fast to assign 1's
+          idx_m = sub2ind([ts.n_s,ts.n_s], ts.state1(ts.action==i), ts.state2(ts.action==i));
+          ts.trans_array{i} = sparse([], [], [], double(ts.n_s), double(ts.n_s), length(idx_m));
+          ts.trans_array{i}(idx_m)=true;
+      end
+      ts.array_computed = true;
     end 
    
     %% BDD API
@@ -228,7 +215,7 @@ classdef TransSyst<handle
           [ts.pg_U{i}, ts.pg_G{i}] = ts.bdd_sys.get_progress_group(i);
         end
 
-        ts.fast_enabled = false;
+        ts.array_computed = false;
         ts.sys_setting = TransSyst.sparse_set;
         ts.bdd_sys = [];
       end

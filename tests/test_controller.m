@@ -69,8 +69,8 @@ function test_pginv(testCase)
     ts.add_progress_group([1, 2], [3, 4]);
 
     [~, ~, cont1] = ts.pre_pg([1, 2], 1:4, true);
-    verifyEqual(testCase, cont1(3), 1);
-    verifyEqual(testCase, cont1(4), 1);
+    verifyEqual(testCase, cont1(3), uint32(1));
+    verifyEqual(testCase, cont1(4), uint32(1));
 
     [~, ~, cont2] = ts.win_primal([], [1, 2], [], 'exists', 'forall');
 

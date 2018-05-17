@@ -131,9 +131,9 @@ function [ind1, ind2] = split_cell(part, ind, dim)
 
     % increase state counter
     part.ts.n_s = part.ts.n_s + 1;
-    part.ts.fast_enabled = false;
+    part.ts.array_computed = false;
 
-     trans_to_add = zeros(0, 3);
+    trans_to_add = zeros(0, 3);
     % Transitions into union
     for i = 1:length(trans_in)
       in_state = trans_in(i);
