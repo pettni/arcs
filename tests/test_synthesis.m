@@ -241,3 +241,44 @@ function test_until_or_always(testCase)
   end
   verifyEqual(testCase, or(all(ismember(state, A1)), all(ismember(state, A2))), true);
 end
+
+function test_dual(testCase)
+
+  ts = TransSyst(6,2);
+  ts.add_transition(1,2,1);
+  ts.add_transition(2,2,1);
+  ts.add_transition(1,3,1);
+  ts.add_transition(3,4,1);
+  ts.add_transition(4,3,1);
+  ts.add_transition(1,5,1);
+  ts.add_transition(5,5,1);
+  ts.add_transition(6,6,1);
+
+  ts.add_transition(1,1,2);
+  ts.add_transition(2,2,2);
+  ts.add_transition(3,3,2);
+  ts.add_transition(4,4,2);
+  ts.add_transition(5,5,2);
+  ts.add_transition(5,6,2);
+
+  B1 = [3,4];
+  B2 = [5];
+
+  C = [2];
+
+  W = ts.win_dual([], {B1, B2}, C, 'exists', 'forall');
+  verifyEqual(testCase, W, uint32(1:5));
+
+  W = ts.win_dual([], {B1, B2}, C, 'forall', 'forall');
+  verifyEqual(testCase, W, uint32([2,3,4]));
+
+
+  C = [3];
+
+  W = ts.win_dual([], {B1, B2}, C, 'exists', 'forall');
+  verifyEqual(testCase, W, uint32([3, 4, 5]));
+
+  W = ts.win_dual([], {B1, B2}, C, 'forall', 'forall');
+  verifyEqual(testCase, W, uint32([3, 4]));
+
+end

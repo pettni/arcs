@@ -1,7 +1,7 @@
 function [V, Cv, cont] = win_dual(ts, A, B_list, C, quant1, quant2)
   % win_until_or_always: compute winning set of      
   %   <>A || or_i <>[]B_i || []<>C
-  % under (quant1, 'forall')-controllability
+  % under (quant1, quant2)-controllability
 
   if isa(quant1, 'char') && strcmp(quant1, 'exists')
     quant1_bool = true;
@@ -20,7 +20,7 @@ function [V, Cv, cont] = win_dual(ts, A, B_list, C, quant1, quant2)
   end
 
   if quant2_bool
-    % Dualize
+    % quant2 is exists -- dualize
     cA = setdiff(uint32(1:ts.n_s), A);
     cC = setdiff(uint32(1:ts.n_s), C);
     cB_list = {};
@@ -31,10 +31,11 @@ function [V, Cv, cont] = win_dual(ts, A, B_list, C, quant1, quant2)
     return
   end
 
+  % quant2 is forall
   V = uint32(1:ts.n_s);
 
   while true
-    preV = ts.pre(V, [], quant1_bool, 'forall');
+    preV = ts.pre(V, [], quant1_bool, quant2_bool);
     P_inner = union(A, intersect(C, preV));
     Vt = ts.win_eventually_or_persistence(P_inner, B_list, quant1_bool);
     if length(Vt) == length(V)
