@@ -61,4 +61,7 @@ Oscar Lindvall Bulancea, KTH
 
  - P Nilsson and N Ozay, "Incremental Synthesis of Switching Protocols via Abstraction Refinement", Proc. of IEEE CDC, 2014.
  - P Nilsson, N Ozay and J Liu, "Augmented Finite Transition Systems as Abstractions for Control Synthesis", Journal of Discrete Event Dynamic Systems (Special issue on Formal Methods in Control), 2017.
- - O B Lindvall, P Nilsson and N Ozay, "Nonuniform abstractions, refinement and controller synthesis with novel BDD encodings", in Proceedings of the IFAC Conference on Analysis and Design of Hybrid Systems (to appear), 2018 
+ - O B Lindvall, P Nilsson and N Ozay, "Nonuniform abstractions, refinement and controller synthesis with novel BDD encodings", in Proceedings of the IFAC Conference on Analysis and Design of Hybrid Systems, 2018 
+ 
+ ## Acknowledgments: 
+ This research is supported in part by DARPA grant N66001-14-1-4045.
