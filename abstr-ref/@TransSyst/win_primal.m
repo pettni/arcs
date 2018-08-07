@@ -69,8 +69,15 @@ function [V, Cv, cont] = win_primal(ts, A, B, C_list, quant1, quant2, V)
 
   iter = 1;
   while true
-    Z = ts.pre(V, [], quant1_bool, false);
-    Z = union(Z, ts.pre_pg(V, A, quant1_bool));
+
+    if nargout > 2
+      [Z1, K_Z1] = ts.pre(V, [], quant1_bool, false);
+      [Z2, ~, K_Z2] = ts.pre_pg(Z1, A, quant1_bool);
+      Z = union(Z1, Z2);
+    else
+      Z1 = ts.pre(V, [], quant1_bool, false);
+      Z = union(Z1, ts.pre_pg(Z1, A, quant1_bool));
+    end
 
     if nargout > 2
       [Vt, Ct, Kt] = ts.win_intermediate(A, B, Z, C_list, quant1_bool);
@@ -89,8 +96,8 @@ function [V, Cv, cont] = win_primal(ts, A, B, C_list, quant1, quant2, V)
     end
 
     if nargout > 2
-      Klist{end+1} = Kt;
-      Vlist{end+1} = Vt;
+      Klist = [Klist {K_Z1, K_Z2, Kt}];
+      Vlist = [Vlist {Z1, Z2, Vt}];
     end
 
     V = Vt;

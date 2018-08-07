@@ -84,3 +84,20 @@ function test_pginv(testCase)
         verifyEqual(testCase, cont2(2), uint32(1));
     end
 end
+
+%% test_persistence: Zexiang's test
+function [outputs] = test_persistence(testCase)
+    ts = TransSyst(2,3);
+    s1 = [1,2,2];
+    a =  [1,2,3];
+    s2 = [1,1,2];
+
+    ts.add_transition(s1,s2,a);
+    ts.trans_array_enable();
+
+    B = [1];
+    [W, ~, cont] = win_primal(ts, [], B, [], 'exists', 'forall');
+
+    verifyEqual(testCase, cont(2), uint32(2));
+    verifyEqual(testCase, cont(1), uint32(1));
+end
